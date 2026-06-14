@@ -1,4 +1,5 @@
-﻿using System;
+﻿using PickAndPlace.Controllers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -112,5 +113,49 @@ namespace PickAndPlace.Controller.Robot
             _stream?.Close();
             _client?.Close();
         }
+        private async Task SendOnlyAsync(string command)
+        {
+            if (!IsConnected()) throw new InvalidOperationException("Robot không được kết nối.");
+
+            byte[] dataToSend = Encoding.ASCII.GetBytes(command + "\n");
+            await _stream.WriteAsync(dataToSend, 0, dataToSend.Length);
+        }
+        public async Task<bool> CheckTriggerAsync()
+        {
+            if (!IsConnected() || _stream == null)
+                return false;
+
+            try
+            {
+                // Không có dữ liệu robot gửi lên thì bỏ qua
+                if (!_stream.DataAvailable)
+                    return false;
+
+                byte[] buffer = new byte[1024];
+                int bytesRead = await _stream.ReadAsync(buffer, 0, buffer.Length);
+
+                if (bytesRead <= 0)
+                    return false;
+
+                string message = Encoding.ASCII.GetString(buffer, 0, bytesRead).Trim();
+
+                AppLogger.Instance.Info($"[Robot -> PC] {message}", "ROBOT");
+
+                if (message == "CHOOK")
+                {
+                    await SendOnlyAsync("READ_TRIGGER_OK");
+                    AppLogger.Instance.Info("[PC -> Robot] READ_TRIGGER_OK", "ROBOT");
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Instance.Error($"[Error] Lỗi đọc trigger từ robot: {ex.Message}", "ROBOT");
+                return false;
+            }
+        }
     }
+
 }

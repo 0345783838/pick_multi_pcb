@@ -20,6 +20,7 @@ using System.Management;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows.Media.Media3D;
 
 namespace PickAndPlace.Controller
@@ -39,6 +40,11 @@ namespace PickAndPlace.Controller
         private CameraManager _cameraManager;
         private LincolnCamera _camera;
         private DobotRobotClient _robot;
+
+        // ─── Constants ───────────────────────────────────────────────────────────
+        private const int TriggerPollIntervalMs = 200;
+        // ─── Timers ───────────────────────────────────────────────────────────────
+        private System.Timers.Timer _triggerTimer;
 
         public MainController(MainWindow window)
         {
@@ -116,7 +122,10 @@ namespace PickAndPlace.Controller
                 }
 
                 _isRunning = true;
+                _inspectCts = new CancellationTokenSource();
+                StartCheckTriggerTimer();
                 return true;
+
             }
             catch (Exception ex)
             {
@@ -130,6 +139,41 @@ namespace PickAndPlace.Controller
         {
             var imageList = templates.Select(x => x.Image).ToList();
             return APICommunication.LoadTemplates(_param.ApiUrlAi, imageList);
+        }
+        private void StartCheckTriggerTimer()
+        {
+            if (_triggerTimer != null) return;
+            _triggerTimer = new System.Timers.Timer(TriggerPollIntervalMs) { AutoReset = true };
+            _triggerTimer.Elapsed += OnTriggerTimerElapsed;
+            _triggerTimer.Start();
+        }
+
+        private async void OnTriggerTimerElapsed(object sender, ElapsedEventArgs e)
+        {
+            if (!_isRunning || _inspectCts.IsCancellationRequested) return;
+            StopPlcTimer();
+
+            try
+            {
+                var triggered = await _robot.CheckTriggerAsync();
+                if (!triggered) return; // chưa có trigger, chờ tick tiếp theo
+
+                await ProcessImageAsync(_model);
+            }
+            finally
+            {
+                // Chỉ restart timer nếu hệ thống vẫn đang chạy
+                if (_isRunning)
+                    StartCheckTriggerTimer();
+            }
+        }
+        private void StopPlcTimer()
+        {
+            if (_triggerTimer == null) return;
+            _triggerTimer.Stop();
+            _triggerTimer.Elapsed -= OnTriggerTimerElapsed;
+            _triggerTimer.Dispose();
+            _triggerTimer = null;
         }
 
         internal void Stop()
