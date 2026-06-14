@@ -1,0 +1,344 @@
+﻿<Window
+    x:Class="PickAndPlace.Views.ModelsManagerWindows.ModelsManagerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:PickAndPlace.Views.ModelsManagerWindows"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:myControl="clr-namespace:Heal.MyControl;assembly=ImageCtlWPF"
+    xmlns:uc="clr-namespace:PickAndPlace.Resources.Styles"
+    xmlns:utils="clr-namespace:PickAndPlace.Utils"
+    Title="Model Manager"
+    Width="600"
+    Height="630"
+    Closing="Window_Closing"
+    Icon="/Resources/Icons/condition.png"
+    ResizeMode="NoResize"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <utils:BitmapSourceConverter x:Key="BitmapSourceConverter" />
+        <utils:FileNameOnlyConverter x:Key="FileNameOnlyConverter" />
+    </Window.Resources>
+    <Border
+        Margin="10"
+        BorderBrush="Gray"
+        BorderThickness="2"
+        CornerRadius="5">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="60" />
+                <RowDefinition Height="250.04" />
+                <RowDefinition Height="170" />
+                <RowDefinition Height="1*" />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <DockPanel Margin="10">
+                    <ToolBar Background="Transparent">
+                        <ToolBar.Resources>
+                            <Style x:Key="btTool" TargetType="Button">
+                                <Setter Property="Margin" Value="10,0,10,0" />
+                            </Style>
+                        </ToolBar.Resources>
+                        <Label
+                            VerticalAlignment="Center"
+                            Content="Model:"
+                            FontWeight="Bold" />
+                        <ComboBox
+                            x:Name="cbbModelNames"
+                            Width="230"
+                            Height="30"
+                            Background="LightGray"
+                            Cursor="Hand"
+                            DisplayMemberPath="Name"
+                            FontSize="15"
+                            FontWeight="Regular"
+                            ForceCursor="True"
+                            IsReadOnly="True"
+                            ItemsSource="{Binding ModelsList}"
+                            SelectedItem="{Binding SelectedModel, Mode=TwoWay}"
+                            ToolTip="List models" />
+
+                        <Button
+                            x:Name="btReload"
+                            Background="Transparent"
+                            Click="btReload_Click"
+                            Style="{StaticResource btTool}"
+                            ToolTip="Reload models">
+                            <Image Source="/Resources/Icons/refresh.ico" />
+                        </Button>
+                        <Separator />
+                        <Button
+                            x:Name="btAddModel"
+                            Click="btAddModel_Click"
+                            Style="{StaticResource btTool}"
+                            ToolTip="Add Model">
+                            <Image Source="/Resources/Icons/newfileicon.png" />
+                        </Button>
+                        <Button
+                            x:Name="btRemoveModel"
+                            Click="btRemoveModel_Click"
+                            IsEnabled="{Binding IsMoldelSelected}"
+                            Style="{StaticResource btTool}"
+                            ToolTip="Remove Model">
+                            <Image Height="30" Source="/Resources/Icons/bin.png" />
+                        </Button>
+                        <Separator />
+                    </ToolBar>
+                </DockPanel>
+            </Grid>
+            <Grid Grid.Row="2">
+                <GroupBox Margin="5,0,5,0" Header="Model Details:">
+                    <GroupBox.HeaderTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <TextBlock
+                                    FontSize="12"
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="{Binding}" />
+                            </Border>
+                        </DataTemplate>
+                    </GroupBox.HeaderTemplate>
+
+                    <Grid>
+                        <ScrollViewer
+                            HorizontalScrollBarVisibility="Auto"
+                            Opacity="0.7"
+                            VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="10,10,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Content="Model Name:" />
+                                    <Label
+                                        x:Name="lbModelName"
+                                        Content="{Binding SelectedModel.Name, FallbackValue='-----'}"
+                                        FontWeight="Bold" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Content="Create Time:" />
+                                    <Label x:Name="lbTimeCreate" Content="{Binding SelectedModel.CreatedTime, FallbackValue='-----'}" />
+                                </StackPanel>
+
+                                <StackPanel Orientation="Horizontal" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Content="PCB Width:" />
+                                    <Label x:Name="lbPcbWidth" Content="{Binding SelectedModel.Width, FallbackValue='-----'}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Content="PCB Height:" />
+                                    <Label x:Name="lbPcbHeight" Content="{Binding SelectedModel.Height, FallbackValue='-----'}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Content="Templates:" />
+                                    <Label x:Name="lbTemplate" Content="{Binding SelectedModel.Templates.Count, FallbackValue='-----'}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+            <Grid Grid.Row="1">
+                <GroupBox Margin="5,0,5,0" Header="Model Specifications:">
+                    <GroupBox.HeaderTemplate>
+                        <DataTemplate>
+                            <Border>
+                                <TextBlock
+                                    FontSize="12"
+                                    FontWeight="Bold"
+                                    Foreground="Black"
+                                    Text="{Binding}" />
+                            </Border>
+                        </DataTemplate>
+                    </GroupBox.HeaderTemplate>
+                    <Grid>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="10" />
+                                <ColumnDefinition Width="2*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid Grid.Column="0">
+                                <DockPanel LastChildFill="False">
+                                    <StackPanel
+                                        Margin="35,25,0,5"
+                                        VerticalAlignment="Center"
+                                        DockPanel.Dock="Top">
+                                        <Label
+                                            Margin="0,-10,0,0"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="PCB Width"
+                                            FontSize="9" />
+                                        <TextBox
+                                            Name="tbImageWidth"
+                                            Width="65"
+                                            Height="25"
+                                            Margin="5,-5,0,0"
+                                            HorizontalContentAlignment="Center"
+                                            VerticalContentAlignment="Center"
+                                            BorderBrush="DarkGray"
+                                            FontSize="14"
+                                            FontWeight="Bold"
+                                            IsEnabled="{Binding IsMoldelSelected}"
+                                            IsReadOnly="False"
+                                            PreviewTextInput="NumberValidationTextBox"
+                                            Text="{Binding SelectedModel.Width, FallbackValue='0'}"
+                                            TextChanged="tbImageWidth_TextChanged" />
+                                    </StackPanel>
+                                    <Image
+                                        Width="170"
+                                        Margin="60,-10,0,0"
+                                        DockPanel.Dock="Top"
+                                        IsEnabled="{Binding IsModelSelected}"
+                                        Source="/Resources/Icons/pcb_rect.png">
+                                        <Image.Style>
+                                            <Style TargetType="Image">
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Opacity" Value="0.3" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                    <StackPanel Margin="5,-95,0,0" DockPanel.Dock="Left">
+                                        <Label
+                                            Margin="0,-10,0,0"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="PCB Height"
+                                            FontSize="9" />
+                                        <TextBox
+                                            Name="tbPcbHeight"
+                                            Width="65"
+                                            Height="25"
+                                            Margin="5,-5,0,0"
+                                            HorizontalContentAlignment="Center"
+                                            VerticalContentAlignment="Center"
+                                            BorderBrush="DarkGray"
+                                            FontSize="14"
+                                            FontWeight="Bold"
+                                            IsEnabled="{Binding IsMoldelSelected}"
+                                            IsReadOnly="False"
+                                            PreviewTextInput="NumberValidationTextBox"
+                                            Text="{Binding SelectedModel.Height, FallbackValue='0'}"
+                                            TextChanged="tbPcbHeight_TextChanged" />
+                                    </StackPanel>
+                                </DockPanel>
+                            </Grid>
+                            <Grid Grid.Column="1">
+                                <Border
+                                    Width="1"
+                                    Margin="0,5,0,5"
+                                    Background="DarkGray" />
+                            </Grid>
+                            <Grid Grid.Column="2">
+                                <GroupBox Margin="5" Header="Template Setup">
+                                    <Grid>
+                                        <ListBox
+                                            x:Name="lbThumbList"
+                                            Grid.Row="1"
+                                            Margin="5,5,5,5"
+                                            BorderThickness="0"
+                                            ItemsSource="{Binding SelectedModel.Templates}"
+                                            ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                            ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                            <ListBox.Background>
+                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                                    <GradientStop Offset="0" Color="#d6cfc7" />
+                                                    <GradientStop Offset="1" Color="#d9dddc" />
+                                                </LinearGradientBrush>
+                                            </ListBox.Background>
+                                            <ListBox.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ListBox.ItemsPanel>
+                                            <ListBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border
+                                                        Margin="5,5,5,0"
+                                                        BorderBrush="Transparent"
+                                                        BorderThickness="2">
+                                                        <StackPanel Width="100">
+                                                            <Image
+                                                                Width="100"
+                                                                Height="80"
+                                                                Source="{Binding Image, Converter={StaticResource BitmapSourceConverter}}"
+                                                                Stretch="Uniform" />
+                                                            <Label
+                                                                Margin="0,0,0,0"
+                                                                HorizontalAlignment="Center"
+                                                                Content="{Binding ImagePath, Converter={StaticResource FileNameOnlyConverter}}"
+                                                                FontSize="12" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ListBox.ItemTemplate>
+
+                                            <ListBox.ItemContainerStyle>
+                                                <Style TargetType="ListBoxItem">
+                                                    <Setter Property="Padding" Value="0" />
+                                                    <Setter Property="BorderThickness" Value="0" />
+                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                    <Style.Triggers>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter Property="BorderBrush" Value="DodgerBlue" />
+                                                            <Setter Property="BorderThickness" Value="2" />
+                                                        </Trigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </ListBox.ItemContainerStyle>
+                                        </ListBox>
+                                        <StackPanel
+                                            Margin="5"
+                                            HorizontalAlignment="Right"
+                                            VerticalAlignment="Top"
+                                            Orientation="Horizontal">
+                                            <Button
+                                                x:Name="btnTemplateManager"
+                                                Width="40"
+                                                Height="40"
+                                                Margin="0,0,0,0"
+                                                Click="btnTemplateManager_Click"
+                                                DockPanel.Dock="Right"
+                                                IsEnabled="{Binding IsMoldelSelected}">
+                                                <Image
+                                                    Width="32"
+                                                    Height="32"
+                                                    Source="/Resources/Icons/image-setting.png"
+                                                    Style="{DynamicResource imageButton}" />
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </GroupBox>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+            <Grid Grid.Row="3">
+                <Grid Grid.Row="2">
+                    <Grid>
+                        <uc:CustomButton
+                            x:Name="btnSave"
+                            Title="Save"
+                            Width="150"
+                            Height="70"
+                            Margin="15,0,5,5"
+                            EndColor="#e8b595"
+                            IconHeight="40"
+                            IconWidth="40"
+                            IsEnabled="{Binding CanSave}"
+                            LeftIcon="/Resources/Icons/save-2.png"
+                            MouseDown="btnSave_MouseDown"
+                            StartColor="#b190ba"
+                            Value="MODEL" />
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+
+</Window>

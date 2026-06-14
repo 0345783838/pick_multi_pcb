@@ -1,0 +1,78 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="PickAndPlace.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="CamSn" Type="System.String" Scope="User">
+      <Value Profile="(Default)">DA7667501</Value>
+    </Setting>
+    <Setting Name="CamExposure" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">50000</Value>
+    </Setting>
+    <Setting Name="RobotIp" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.0.5</Value>
+    </Setting>
+    <Setting Name="RobotPort" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="SaveEnable" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="SaveMode" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="SavePath" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="EndPointCheckStatus" Type="System.String" Scope="User">
+      <Value Profile="(Default)">check_service_status</Value>
+    </Setting>
+    <Setting Name="ApiUrlAi" Type="System.String" Scope="User">
+      <Value Profile="(Default)">http://127.0.0.1:8386/ai</Value>
+    </Setting>
+    <Setting Name="EndPointCalib2d" Type="System.String" Scope="User">
+      <Value Profile="(Default)">calib_2d</Value>
+    </Setting>
+    <Setting Name="EndPointTransform" Type="System.String" Scope="User">
+      <Value Profile="(Default)">transform_pixel_to_robot</Value>
+    </Setting>
+    <Setting Name="EndPointSaveMatrix" Type="System.String" Scope="User">
+      <Value Profile="(Default)">save_calib_matrix</Value>
+    </Setting>
+    <Setting Name="EndPointLoadMatrix" Type="System.String" Scope="User">
+      <Value Profile="(Default)">load_calib_matrix</Value>
+    </Setting>
+    <Setting Name="EndPointCheckCalibReady" Type="System.String" Scope="User">
+      <Value Profile="(Default)">check_calib_ready_status</Value>
+    </Setting>
+    <Setting Name="EndPointGetRealCoord" Type="System.String" Scope="User">
+      <Value Profile="(Default)">cal_robot_coord</Value>
+    </Setting>
+    <Setting Name="StartShiftTime" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="CurrentOK" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="CurrentNG" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="MODELS_PATH" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\\BroSight\\Models</Value>
+    </Setting>
+    <Setting Name="EndPointLoadTemplates" Type="System.String" Scope="User">
+      <Value Profile="(Default)">load_templates</Value>
+    </Setting>
+    <Setting Name="WriteTimeout" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">3000</Value>
+    </Setting>
+    <Setting Name="PickTimeout" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">30000</Value>
+    </Setting>
+    <Setting Name="ReadPoseTimeout" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">3000</Value>
+    </Setting>
+    <Setting Name="MoveTimeout" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">10000</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

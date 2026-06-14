@@ -1,0 +1,591 @@
+﻿<Window
+    x:Class="PickAndPlace.Views.IntrinsicCalibWindows.IntrinsicCalibWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:PickAndPlace.Views.IntrinsicCalibWindows"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:myControl="clr-namespace:Heal.MyControl;assembly=ImageCtlWPF"
+    xmlns:uc="clr-namespace:PickAndPlace.Resources.Styles"
+    Title="Intrinsic Calibration"
+    Width="1300"
+    Height="768"
+    Icon="/Resources/Icons/robot-arm.png"
+    Loaded="Window_Loaded"
+    ResizeMode="NoResize"
+    Style="{StaticResource WindowStyle}"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="10" />
+            <ColumnDefinition Width="450" />
+        </Grid.ColumnDefinitions>
+        <Grid Grid.Column="1">
+            <Border
+                Width="1"
+                Margin="0,5,0,5"
+                Background="DarkGray" />
+        </Grid>
+        <Grid Grid.Column="0">
+            <Grid.RowDefinitions>
+                <RowDefinition />
+                <RowDefinition Height="150" />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="1">
+                <GroupBox
+                    Margin="10,5,5,5"
+                    BorderBrush="Gray"
+                    BorderThickness="1"
+                    Header="Images List">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="149" />
+                        </Grid.ColumnDefinitions>
+                        <Grid Grid.Column="0">
+                            <ListBox
+                                x:Name="lbThumbList"
+                                Grid.Row="1"
+                                Margin="5,0,5,5"
+                                BorderThickness="0"
+                                ItemsSource="{Binding ImageList}"
+                                ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                SelectedItem="{Binding SelectedThumb}">
+                                <ListBox.Background>
+                                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,0">
+                                        <GradientStop Offset="0" Color="#d6cfc7" />
+                                        <GradientStop Offset="1" Color="#d9dddc" />
+                                    </LinearGradientBrush>
+                                </ListBox.Background>
+                                <ListBox.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" />
+                                    </ItemsPanelTemplate>
+                                </ListBox.ItemsPanel>
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border
+                                            Margin="5,5,5,0"
+                                            BorderBrush="Transparent"
+                                            BorderThickness="2">
+                                            <StackPanel Width="100">
+                                                <Image
+                                                    Width="100"
+                                                    Height="80"
+                                                    Source="{Binding Image}"
+                                                    Stretch="UniformToFill" />
+                                                <Label
+                                                    Margin="0,0,0,0"
+                                                    HorizontalAlignment="Center"
+                                                    Content="{Binding Text}"
+                                                    FontSize="12"
+                                                    FontWeight="Bold" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Padding" Value="0" />
+                                        <Setter Property="BorderThickness" Value="0" />
+                                        <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter Property="BorderBrush" Value="DodgerBlue" />
+                                                <Setter Property="BorderThickness" Value="2" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                        </Grid>
+                        <Grid Grid.Column="1">
+                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                <Label
+                                    Margin="-8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Content="{Binding ImageList.Count}"
+                                    FontSize="25"
+                                    FontWeight="Bold" />
+                                <Label
+                                    Margin="-8,0,0,0"
+                                    VerticalAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Content=" / 10"
+                                    FontSize="25"
+                                    FontWeight="Bold" />
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+            <Grid Grid.Row="0">
+                <GroupBox
+                    Margin="10,5,5,5"
+                    BorderBrush="Gray"
+                    BorderThickness="1"
+                    Header="Camera View">
+                    <myControl:ImageBox
+                        x:Name="imbCamera"
+                        Margin="5"
+                        Background="LightGray" />
+
+                </GroupBox>
+            </Grid>
+        </Grid>
+        <Grid Grid.Column="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="170" />
+                <RowDefinition Height="266" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <GroupBox
+                    Margin="5"
+                    BorderBrush="Gray"
+                    BorderThickness="1"
+                    Header="Controlling Camera">
+                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                        <StackPanel VerticalAlignment="Center">
+                            <ComboBox
+                                x:Name="cbbCamSn"
+                                Width="120"
+                                Height="40"
+                                HorizontalContentAlignment="Center"
+                                VerticalContentAlignment="Center"
+                                FontSize="15" />
+                            <uc:CustomButton
+                                x:Name="btnConnectCamera"
+                                Title="Connect"
+                                Width="150"
+                                Height="80"
+                                Margin="5,5,10,5"
+                                EndColor="#b6c0c5"
+                                IconHeight="45"
+                                IconWidth="45"
+                                IsEnabled="{Binding ConfirmEnable}"
+                                LeftIcon="/Resources/Icons/camera-connect.png"
+                                MouseDown="btnConnectCamera_MouseDown"
+                                StartColor="#18a5a7"
+                                Value="CAM" />
+                        </StackPanel>
+                        <Border
+                            Width="1"
+                            Margin="0,5,0,5"
+                            Background="DarkGray" />
+                        <uc:CustomButton
+                            x:Name="btnCaptureImage"
+                            Title="Capture"
+                            Width="200"
+                            Height="100"
+                            Margin="15,5,5,5"
+                            EndColor="#57370D"
+                            IconHeight="60"
+                            IconWidth="60"
+                            IsEnabled="{Binding ConfirmEnable}"
+                            LeftIcon="/Resources/Icons/capture-image.png"
+                            MouseDown="btnCaptureImage_MouseDown"
+                            StartColor="#ffe998"
+                            Value="IMAGE" />
+                    </StackPanel>
+                </GroupBox>
+            </Grid>
+            <Grid Grid.Row="1">
+                <GroupBox
+                    Margin="5"
+                    BorderBrush="Gray"
+                    BorderThickness="1"
+                    Header="Image Viewer">
+                    <myControl:ImageBox
+                        x:Name="imbImage"
+                        Margin="5"
+                        Background="LightGray" />
+                </GroupBox>
+            </Grid>
+            <Grid Grid.Row="2">
+                <GroupBox
+                    Margin="5"
+                    BorderBrush="Gray"
+                    BorderThickness="1"
+                    Header="Calibration">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="21*" />
+                            <RowDefinition Height="5" />
+                            <RowDefinition Height="47*" />
+                            <RowDefinition Height="80" />
+                        </Grid.RowDefinitions>
+                        <Grid Grid.Row="0">
+                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                <Label
+                                    Width="100"
+                                    VerticalAlignment="Center"
+                                    Content="Inner Corners: "
+                                    FontSize="13" />
+                                <StackPanel Margin="0,-15,0,0" VerticalAlignment="Center">
+                                    <Label
+                                        Margin="0,-10,0,0"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Content="Row"
+                                        FontSize="12" />
+                                    <TextBox
+                                        Name="tbCornerX"
+                                        Width="50"
+                                        Height="25"
+                                        Margin="0,-5,0,0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        BorderBrush="DarkGray"
+                                        FontSize="14"
+                                        FontWeight="Bold"
+                                        Text="0" />
+                                </StackPanel>
+
+                                <Label
+                                    VerticalAlignment="Center"
+                                    Content="x"
+                                    FontSize="13" />
+                                <StackPanel Margin="0,-15,0,0" VerticalAlignment="Center">
+                                    <Label
+                                        Margin="0,-10,0,0"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Content="Col"
+                                        FontSize="12" />
+                                    <TextBox
+                                        Name="tbCornerY"
+                                        Width="50"
+                                        Height="25"
+                                        Margin="0,-5,0,0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        BorderBrush="DarkGray"
+                                        FontSize="14"
+                                        FontWeight="Bold"
+                                        Text="0" />
+                                </StackPanel>
+
+                                <Border
+                                    Width="1"
+                                    Margin="10,10,10,10"
+                                    Background="DarkGray" />
+                                <Label
+                                    Width="90"
+                                    VerticalAlignment="Center"
+                                    Content="Square Size: "
+                                    FontSize="13" />
+                                <TextBox
+                                    Name="tbSquareSize"
+                                    Width="50"
+                                    Height="25"
+                                    Margin="0,0,0,0"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    BorderBrush="DarkGray"
+                                    FontSize="14"
+                                    FontWeight="Bold"
+                                    Text="0" />
+                                <Label
+                                    VerticalAlignment="Center"
+                                    Content="(mm)"
+                                    FontSize="13" />
+                            </StackPanel>
+
+                        </Grid>
+                        <Grid Grid.Row="1">
+                            <Separator Margin="20,0,20,0" />
+                        </Grid>
+                        <Grid Grid.Row="2">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition />
+                                <ColumnDefinition Width="5" />
+                                <ColumnDefinition />
+                            </Grid.ColumnDefinitions>
+                            <Grid Grid.Column="1">
+                                <Border
+                                    Width="1"
+                                    Margin="0,15,0,15"
+                                    Background="DarkGray" />
+                            </Grid>
+                            <Grid Grid.Column="0">
+                                <StackPanel Margin="5" VerticalAlignment="Center">
+                                    <Label
+                                        Margin="0,-10,0,5"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Content="Camera Matrix"
+                                        FontSize="14"
+                                        FontWeight="Bold" />
+                                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                        <StackPanel Margin="0,0,0,0" VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="Fx"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicFx"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                        <StackPanel Margin="30,0,0,0" VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="Fy"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicFy"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                        <StackPanel Margin="0,10,0,0" VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="Cx"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicCx"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,-0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                        <StackPanel Margin="30,10,0,0" VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="Cy"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicCy"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                            <Grid Grid.Column="2">
+                                <StackPanel Margin="5" VerticalAlignment="Center">
+                                    <Label
+                                        Margin="0,-10,0,5"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Content="Distortion Coefficients"
+                                        FontSize="14"
+                                        FontWeight="Bold" />
+                                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                        <StackPanel Margin="0,0,0,0" VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="K1"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicK1"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                        <StackPanel Margin="15,0,0,0" VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="K2"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicK2"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                        <StackPanel Margin="15,0,0,0" VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="P1"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicP1"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                    <StackPanel
+                                        Margin="0,10,0,0"
+                                        HorizontalAlignment="Center"
+                                        Orientation="Horizontal">
+                                        <StackPanel VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="P2"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicP2"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                        <StackPanel Margin="15,0,0,0" VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="K3"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicK3"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                        <StackPanel Margin="15,0,0,0" VerticalAlignment="Center">
+                                            <Label
+                                                Margin="0,-10,0,0"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Content="RMS"
+                                                FontSize="12" />
+                                            <TextBox
+                                                Name="tbIntrinsicRMS"
+                                                Width="50"
+                                                Height="25"
+                                                Margin="0,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                Background="LightGray"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                        <Grid Grid.Row="3" Margin="0,0,0,0">
+                            <StackPanel
+                                Margin="0,-5,0,0"
+                                HorizontalAlignment="Center"
+                                Orientation="Horizontal">
+                                <uc:CustomButton2
+                                    x:Name="btnCalibrate"
+                                    Title="Process&#x0A;Calib"
+                                    Width="100"
+                                    Height="60"
+                                    Margin="15,5,5,5"
+                                    EndColor="#EEB87D"
+                                    FontSize="12"
+                                    IconHeight="40"
+                                    IconWidth="35"
+                                    IsEnabled="{Binding CanFinish}"
+                                    LeftIcon="/Resources/Icons/board.png"
+                                    MouseDown="btnCalibrate_MouseDown"
+                                    StartColor="#EE9B57" />
+                                <uc:CustomButton2
+                                    x:Name="btnSave"
+                                    Title="Save&#x0A;Result"
+                                    Width="100"
+                                    Height="60"
+                                    Margin="25,5,5,5"
+                                    EndColor="#1e5b53"
+                                    FontSize="12"
+                                    IconHeight="40"
+                                    IconWidth="35"
+                                    IsEnabled="{Binding CanFinish}"
+                                    LeftIcon="/Resources/Icons/save.png"
+                                    MouseDown="btnSave_MouseDown"
+                                    StartColor="#ccffaa" />
+                            </StackPanel>
+                        </Grid>
+                    </Grid>
+                </GroupBox>
+            </Grid>
+        </Grid>
+
+    </Grid>
+</Window>

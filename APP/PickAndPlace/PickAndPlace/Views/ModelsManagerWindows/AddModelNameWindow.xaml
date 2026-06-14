@@ -1,0 +1,40 @@
+﻿<Window
+    x:Class="PickAndPlace.Views.ModelsManagerWindows.AddModelNameWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:PickAndPlace.Views.ModelsManagerWindows"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    Title="Add Model Name"
+    Width="450"
+    Height="100"
+    KeyDown="Window_KeyDown"
+    ResizeMode="NoResize"
+    Style="{DynamicResource WindowStyle}"
+    WindowStartupLocation="CenterScreen">
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+        <StackPanel Margin="10,0,20,0" Orientation="Horizontal">
+            <Label
+                Height="30"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Top"
+                VerticalContentAlignment="Center"
+                Content="Model Name:" />
+            <TextBox
+                x:Name="tbModelName"
+                Width="253"
+                Height="32"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Top"
+                VerticalContentAlignment="Center"
+                FontSize="13"
+                Text=""
+                TextWrapping="Wrap" />
+            <Button
+                Width="50"
+                Margin="10,0,0,0"
+                Click="Button_Click"
+                Content="OK" />
+        </StackPanel>
+    </Grid>
+</Window>

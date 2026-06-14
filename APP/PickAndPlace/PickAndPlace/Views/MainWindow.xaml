@@ -1,0 +1,494 @@
+﻿<Window
+    x:Class="PickAndPlace.Views.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:local="clr-namespace:PickAndPlace"
+    xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:myControl="clr-namespace:Heal.MyControl;assembly=ImageCtlWPF"
+    xmlns:utils="clr-namespace:PickAndPlace.Utils"
+    Title="Picking PCB"
+    Width="1280"
+    Height="800"
+    MinWidth="1280"
+    MinHeight="800"
+    Closing="Window_Closing"
+    Icon="/Resources/Icons/robot-arm.png"
+    Loaded="Window_Loaded"
+    Style="{StaticResource WindowStyle}"
+    WindowStartupLocation="CenterScreen"
+    mc:Ignorable="d">
+    <Window.Resources>
+        <utils:MainStatusColorConverter x:Key="MainStatusColorConverter" />
+        <utils:MainInspectionStatusConverter x:Key="MainInspectionStatusConverter" />
+        <utils:MainStatusConverter x:Key="MainStatusConverter" />
+        <utils:TextColorConverter x:Key="TextColorConverter" />
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="90" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0">
+            <Grid>
+                <DockPanel x:Name="MenuTools" LastChildFill="True">
+                    <DockPanel
+                        x:Name="dpnMenu"
+                        Margin="5,0,0,0"
+                        DockPanel.Dock="Top">
+                        <Menu
+                            x:Name="MenuStrip"
+                            DockPanel.Dock="Top"
+                            FontSize="13">
+                            <MenuItem Header="_Menu" />
+                            <MenuItem Header="_Tools" />
+                            <MenuItem Header="_Help" />
+                        </Menu>
+                    </DockPanel>
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="540" />
+                        </Grid.ColumnDefinitions>
+                        <ToolBar Grid.Column="0" Background="Transparent">
+                            <ToolBar.Resources>
+                                <Style x:Key="btToolBarStyle" TargetType="Button">
+                                    <Setter Property="Margin" Value="10,0,10,0" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
+                            </ToolBar.Resources>
+                            <Button
+                                x:Name="btnSettings"
+                                Margin="5,0,5,0"
+                                Click="btnSettings_Click"
+                                Style="{StaticResource btToolBarStyle}"
+                                ToolTip="General Settings">
+                                <Image
+                                    Width="45"
+                                    Height="45"
+                                    Source="/Resources/Icons/settings.png"
+                                    Style="{DynamicResource imageButton}" />
+                            </Button>
+                            <Separator />
+                            <Button
+                                x:Name="btnCalibEyeToHand2D"
+                                Margin="5,0,5,0"
+                                Click="btnCalibEyeToHand2D_Click"
+                                Style="{StaticResource btToolBarStyle}"
+                                ToolTip="Robot Calibration">
+                                <Image
+                                    Width="45"
+                                    Height="45"
+                                    Source="/Resources/Icons/robot-arm.png"
+                                    Style="{DynamicResource imageButton}" />
+                            </Button>
+                            <Separator />
+                            <Button
+                                x:Name="btnModelsManager"
+                                Margin="0,0,0,0"
+                                Click="btnModelsManager_Click"
+                                Style="{StaticResource btToolBarStyle}"
+                                ToolTip="Models Manager">
+                                <Image
+                                    Width="50"
+                                    Height="50"
+                                    Source="/Resources/Icons/condition.png"
+                                    Style="{DynamicResource imageButton}" />
+                            </Button>
+                            <Separator />
+
+                            <StackPanel
+                                Margin="0,-15,3,0"
+                                VerticalAlignment="Center"
+                                Orientation="Vertical">
+                                <Label
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Content="Select Model"
+                                    FontSize="12" />
+                                <ComboBox
+                                    x:Name="cbbModelNames"
+                                    Width="170"
+                                    Height="40"
+                                    Margin="5,0,0,0"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalContentAlignment="Center"
+                                    Background="#FFDDDDDD"
+                                    BorderBrush="Gray"
+                                    BorderThickness="1"
+                                    DisplayMemberPath="Name"
+                                    FontSize="14"
+                                    FontWeight="Bold"
+                                    Foreground="DarkBlue"
+                                    ItemsSource="{Binding ModelsList}"
+                                    SelectedIndex="0"
+                                    SelectedItem="{Binding SelectedModel, Mode=TwoWay}" />
+                            </StackPanel>
+                            <Separator />
+
+                            <Button
+                                x:Name="btnStart"
+                                Margin="5,0,5,0"
+                                Click="btnStart_Click"
+                                Style="{StaticResource btToolBarStyle}"
+                                ToolTip="Start">
+                                <Image
+                                    x:Name="imBtnStart"
+                                    Width="50"
+                                    Height="50"
+                                    Source="/Resources/Icons/start.png"
+                                    Style="{DynamicResource imageButton}" />
+                            </Button>
+                            <Separator />
+                            <Button
+                                x:Name="btnStop"
+                                Margin="5,0,5,0"
+                                Click="btnStop_Click"
+                                IsEnabled="False"
+                                Style="{StaticResource btToolBarStyle}"
+                                ToolTip="Stop">
+                                <Image
+                                    x:Name="imBtnStop"
+                                    Width="50"
+                                    Height="50"
+                                    Source="/Resources/Icons/stop.png"
+                                    Style="{DynamicResource imageButton}" />
+                            </Button>
+                            <Separator />
+                            <Button
+                                x:Name="btnTest"
+                                Margin="5,0,5,0"
+                                Click="btnTest_Click"
+                                IsEnabled="False"
+                                Style="{StaticResource btToolBarStyle}"
+                                ToolTip="Capture Once">
+                                <Image
+                                    Width="50"
+                                    Height="50"
+                                    Source="/Resources/Icons/screenshot.png"
+                                    Style="{DynamicResource imageButton}" />
+                            </Button>
+                            <Separator />
+                        </ToolBar>
+                        <Grid Grid.Column="1">
+                            <DockPanel Margin="5,0,5,0" LastChildFill="False">
+                                <GroupBox
+                                    Margin="5,0,5,0"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Header="CAM Status">
+                                    <Border
+                                        x:Name="bdCam1Status"
+                                        Margin="2"
+                                        Background="{Binding CamStatus, Converter={StaticResource MainStatusColorConverter}, FallbackValue='Gray'}"
+                                        BorderBrush="White"
+                                        BorderThickness="0.7"
+                                        CornerRadius="5">
+                                        <Label
+                                            x:Name="lbCam1Status"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="{Binding CamStatus, Converter={StaticResource MainStatusConverter}, FallbackValue='UNKNOWN'}"
+                                            FontSize="12"
+                                            FontWeight="Bold"
+                                            Foreground="White" />
+                                    </Border>
+                                </GroupBox>
+                                <GroupBox
+                                    Margin="5,0,5,0"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Header="Robot Status">
+                                    <Border
+                                        x:Name="bdPlcStatus"
+                                        Margin="2"
+                                        Background="{Binding RobotStatus, Converter={StaticResource MainStatusColorConverter}, FallbackValue='Gray'}"
+                                        BorderBrush="White"
+                                        BorderThickness="0.7"
+                                        CornerRadius="5">
+                                        <Label
+                                            x:Name="lbPlcStatus"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="{Binding RobotStatus, Converter={StaticResource MainStatusConverter}, FallbackValue='UNKNOWN'}"
+                                            FontSize="12"
+                                            FontWeight="Bold"
+                                            Foreground="White" />
+                                    </Border>
+                                </GroupBox>
+                                <GroupBox
+                                    Margin="5,0,5,0"
+                                    DockPanel.Dock="Right"
+                                    FontWeight="Bold"
+                                    Header="Engine Status">
+                                    <Border
+                                        x:Name="bdAiStatus"
+                                        Margin="2"
+                                        Background="{Binding AiStatus, Converter={StaticResource MainStatusColorConverter}, FallbackValue='Gray'}"
+                                        BorderBrush="White"
+                                        BorderThickness="0.7"
+                                        CornerRadius="5">
+                                        <Label
+                                            x:Name="lbAiStatus"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="{Binding AiStatus, Converter={StaticResource MainStatusConverter}, FallbackValue='UNKNOWN'}"
+                                            FontSize="12"
+                                            FontWeight="Bold"
+                                            Foreground="White" />
+                                    </Border>
+                                </GroupBox>
+                            </DockPanel>
+                        </Grid>
+                    </Grid>
+                </DockPanel>
+            </Grid>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="446" />
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="0">
+                <GroupBox
+                    Margin="5"
+                    BorderBrush="Black"
+                    BorderThickness="1"
+                    FontWeight="Bold"
+                    Header="Camera View">
+                    <myControl:ImageBox
+                        x:Name="imbImage"
+                        Margin="5"
+                        Background="LightGray"
+                        PreviewMouseDown="imbImage_PreviewMouseDown" />
+                </GroupBox>
+            </Grid>
+            <Grid Grid.Column="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="280" />
+                        <RowDefinition Height="252" />
+                        <RowDefinition />
+                    </Grid.RowDefinitions>
+                    <Grid Grid.Row="0">
+                        <GroupBox
+                            Margin="5"
+                            BorderBrush="Gray"
+                            BorderThickness="1"
+                            Header="Statistics">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="5*" />
+                                    <RowDefinition Height="22*" />
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <StackPanel
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Orientation="Horizontal">
+                                        <Label Content="Working Shift:" />
+                                        <Label
+                                            Name="lbWorkingShift"
+                                            Content="7:00 - 18:30"
+                                            FontWeight="Bold"
+                                            Foreground="DarkBlue" />
+                                        <Label Content="---" />
+                                        <Label Content="Start Date:" />
+                                        <Label
+                                            Name="lbDate"
+                                            Content="16/01/2026"
+                                            FontWeight="Bold"
+                                            Foreground="DarkBlue" />
+                                    </StackPanel>
+
+                                </Grid>
+                                <Grid Grid.Row="1">
+                                    <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                        <StackPanel
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Orientation="Vertical">
+                                            <Label
+                                                HorizontalAlignment="Center"
+                                                Content="OK"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                Foreground="Green" />
+                                            <TextBox
+                                                Name="tbOKCount"
+                                                Width="50"
+                                                Margin="5,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                Foreground="Green"
+                                                IsReadOnly="True" />
+                                            <Label
+                                                Margin="0,25,0,0"
+                                                HorizontalAlignment="Center"
+                                                Content="Failed"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                Foreground="Red" />
+                                            <TextBox
+                                                Name="tbNGCount"
+                                                Width="50"
+                                                Margin="5,0,0,0"
+                                                HorizontalContentAlignment="Center"
+                                                VerticalContentAlignment="Center"
+                                                BorderBrush="DarkGray"
+                                                FontSize="14"
+                                                FontWeight="Bold"
+                                                Foreground="Red"
+                                                IsReadOnly="True" />
+                                        </StackPanel>
+                                        <lvc:PieChart
+                                            Grid.Row="1"
+                                            Width="300"
+                                            LegendLocation="Right"
+                                            Series="{Binding PieSeriesCollection}" />
+
+                                    </StackPanel>
+                                </Grid>
+
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+                    <Grid Grid.Row="2">
+                        <GroupBox
+                            Margin="5"
+                            BorderBrush="Gray"
+                            BorderThickness="1"
+                            Header="Messages">
+                            <ListBox x:Name="LogListBox" ItemsSource="{Binding Logger.Logs}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock>
+                                            <Run Foreground="Gray" Text="{Binding TimeText, Mode=OneWay}" />
+                                            <Run Text=" [" />
+                                            <Run FontWeight="Bold" Text="{Binding Source, Mode=OneWay}" />
+                                            <Run Text="] " />
+                                            <Run Text="{Binding Message, Mode=OneWay}">
+                                                <Run.Style>
+                                                    <Style TargetType="Run">
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Level}" Value="Error">
+                                                                <Setter Property="Foreground" Value="Red" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Level}" Value="Warning">
+                                                                <Setter Property="Foreground" Value="Orange" />
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Level}" Value="Success">
+                                                                <Setter Property="Foreground" Value="LimeGreen" />
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Run.Style>
+                                            </Run>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </GroupBox>
+                    </Grid>
+                    <Grid Grid.Row="1">
+                        <GroupBox
+                            Margin="5"
+                            BorderThickness="1"
+                            Header="Calculate Results">
+                            <Grid>
+                                <StackPanel VerticalAlignment="Top">
+                                    <Border
+                                        x:Name="bdInspectionStatus"
+                                        Width="200"
+                                        Height="50"
+                                        Margin="0,20,0,20"
+                                        Background="{Binding InspectionStatus, Converter={StaticResource MainStatusColorConverter}, FallbackValue='Gray'}"
+                                        BorderBrush="DarkGray"
+                                        BorderThickness="0.7"
+                                        CornerRadius="5"
+                                        DockPanel.Dock="Left">
+                                        <Label
+                                            x:Name="lbInspectionStatus"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="{Binding InspectionStatus, Converter={StaticResource MainInspectionStatusConverter}, FallbackValue='UNKNOWN'}"
+                                            FontSize="24"
+                                            FontWeight="Bold"
+                                            Foreground="{Binding InspectionStatus, Converter={StaticResource TextColorConverter}}" />
+                                    </Border>
+                                    <StackPanel
+                                        Margin="60,5,20,0"
+                                        DockPanel.Dock="Top"
+                                        Orientation="Horizontal">
+                                        <Label
+                                            Width="120"
+                                            VerticalContentAlignment="Center"
+                                            Content="Score:"
+                                            FontSize="17"
+                                            FontWeight="Bold"
+                                            Foreground="Gray" />
+                                        <Label
+                                            x:Name="lbScore"
+                                            Width="Auto"
+                                            HorizontalContentAlignment="Left"
+                                            VerticalContentAlignment="Center"
+                                            Content="N/A"
+                                            FontSize="18"
+                                            FontWeight="Bold"
+                                            Foreground="DarkBlue" />
+                                    </StackPanel>
+                                    <StackPanel
+                                        Margin="60,5,20,0"
+                                        DockPanel.Dock="Top"
+                                        Orientation="Horizontal">
+                                        <Label
+                                            Width="120"
+                                            VerticalContentAlignment="Center"
+                                            Content="Image X,Y,R:"
+                                            FontSize="17"
+                                            FontWeight="Bold"
+                                            Foreground="Gray" />
+                                        <Label
+                                            x:Name="lbImageXYR"
+                                            Width="Auto"
+                                            HorizontalContentAlignment="Left"
+                                            VerticalContentAlignment="Center"
+                                            Content="N/A"
+                                            FontSize="18"
+                                            FontWeight="Bold"
+                                            Foreground="DarkBlue" />
+                                    </StackPanel>
+                                    <StackPanel
+                                        Margin="60,5,20,0"
+                                        DockPanel.Dock="Top"
+                                        Orientation="Horizontal">
+                                        <Label
+                                            Width="120"
+                                            VerticalContentAlignment="Center"
+                                            Content="Robot X,Y,W:"
+                                            FontSize="17"
+                                            FontWeight="Bold"
+                                            Foreground="Gray" />
+                                        <Label
+                                            x:Name="lbRobotXYW"
+                                            Width="Auto"
+                                            HorizontalContentAlignment="Left"
+                                            VerticalContentAlignment="Center"
+                                            Content="N/A"
+                                            FontSize="18"
+                                            FontWeight="Bold"
+                                            Foreground="DarkBlue" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </GroupBox>
+                    </Grid>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>
