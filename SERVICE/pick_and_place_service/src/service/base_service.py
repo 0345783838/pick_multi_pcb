@@ -21,6 +21,9 @@ CALIB_FILE_PATH = config('CALIB_FILE_PATH')
 OFFSET_X = config('OFFSET_X', cast=float)
 OFFSET_Y = config('OFFSET_Y', cast=float)
 
+TOOL_OFFSET_X = config('TOOL_OFFSET_X', cast=float)
+TOOL_OFFSET_Y = config('TOOL_OFFSET_Y', cast=float)
+
 IMAGE_MATCHING_DLL = config('IMAGE_MATCHING_DLL')
 IMAGE_MATCHING_MAX_COUNT = config('IMAGE_MATCHING_MAX_COUNT', cast=int)
 IMAGE_MATCHING_SCORE_THRESHOLD = config('IMAGE_MATCHING_SCORE_THRESHOLD', cast=float)
@@ -35,6 +38,9 @@ calib = Calibration2D(calib_file_path)
 
 offset_x = OFFSET_X
 offset_y = OFFSET_Y
+
+tool_offset_x = TOOL_OFFSET_X
+tool_offset_y = TOOL_OFFSET_Y
 
 image_matcher = ImageMatcher(IMAGE_MATCHING_DLL,
                              IMAGE_MATCHING_MAX_COUNT,
@@ -54,5 +60,7 @@ class BaseService:
             self.image_matcher = image_matcher
             self.offset_x = offset_x
             self.offset_y = offset_y
+            self.tool_offset_x = tool_offset_x
+            self.tool_offset_y = tool_offset_y
         else:
             pass

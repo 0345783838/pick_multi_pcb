@@ -60,7 +60,7 @@ namespace PickAndPlace.Controller.Robot
         // GỬI LỆNH VÀ ĐỌC PHẢN HỒI CHUNG
         private async Task<string> SendCommandAsync(string command)
         {
-            if (!IsConnected()) throw new InvalidOperationException("Robot không được kết nối.");
+            if (!IsConnected() || _client == null || _client.Client == null) throw new InvalidOperationException("Robot không được kết nối.");
 
             try
             {
@@ -112,6 +112,7 @@ namespace PickAndPlace.Controller.Robot
         {
             _stream?.Close();
             _client?.Close();
+            _client?.Close();
         }
         private async Task SendOnlyAsync(string command)
         {
@@ -122,7 +123,7 @@ namespace PickAndPlace.Controller.Robot
         }
         public async Task<bool> CheckTriggerAsync()
         {
-            if (!IsConnected() || _stream == null)
+            if (_stream == null || !IsConnected())
                 return false;
 
             try

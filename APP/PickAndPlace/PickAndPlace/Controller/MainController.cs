@@ -150,7 +150,7 @@ namespace PickAndPlace.Controller
 
         private async void OnTriggerTimerElapsed(object sender, ElapsedEventArgs e)
         {
-            if (!_isRunning || _inspectCts.IsCancellationRequested) return;
+            if (!_isRunning || _inspectCts.IsCancellationRequested || _robot == null) return;
             StopPlcTimer();
 
             try
@@ -182,6 +182,11 @@ namespace PickAndPlace.Controller
             {
                 _camera.Stop();
             }
+            if (_robot != null)
+            {
+                _robot.Dispose();
+                _robot = null;
+            }
         }
         internal void Close()
         {
@@ -193,6 +198,7 @@ namespace PickAndPlace.Controller
             if (_robot != null)
             {
                 _robot.Dispose();
+                _robot = null;
             }
             AIServiceController.CloseProcessExisting();
         }

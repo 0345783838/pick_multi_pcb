@@ -6,7 +6,7 @@
       <Value Profile="(Default)">DA7667501</Value>
     </Setting>
     <Setting Name="CamExposure" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">50000</Value>
+      <Value Profile="(Default)">100000</Value>
     </Setting>
     <Setting Name="RobotIp" Type="System.String" Scope="User">
       <Value Profile="(Default)">192.168.0.5</Value>

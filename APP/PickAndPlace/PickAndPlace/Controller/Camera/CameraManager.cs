@@ -48,12 +48,7 @@ namespace PickAndPlace.Controllers.Camera
         public bool CheckCameraConnection(string SN)
         {
             var cam = GetCamera(SN);
-            if (cam.IsOpen())
-            {
-                cam.Close();
-                return cam.IsOpen();
-            }
-            return false;
+            return cam.IsOpen();
         }
     }
 }

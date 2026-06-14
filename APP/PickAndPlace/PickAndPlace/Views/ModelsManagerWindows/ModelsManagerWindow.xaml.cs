@@ -130,12 +130,12 @@ namespace PickAndPlace.Views.ModelsManagerWindows
 
         private void btnSave_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            int w;
-            int h;
+            double w;
+            double h;
             try
             {
-                w = Convert.ToInt32(tbImageWidth.Text);
-                h = Convert.ToInt32(tbPcbHeight.Text);
+                w = Convert.ToDouble(tbImageWidth.Text);
+                h = Convert.ToDouble(tbPcbHeight.Text);
             }
             catch
             {
@@ -150,8 +150,8 @@ namespace PickAndPlace.Views.ModelsManagerWindows
                 box.ShowDialog();
                 return;
             }
-            SelectedModel.Height = Convert.ToInt32(tbPcbHeight.Text);
-            SelectedModel.Width = Convert.ToInt32(tbImageWidth.Text);
+            SelectedModel.Height = Convert.ToDouble(tbPcbHeight.Text);
+            SelectedModel.Width = Convert.ToDouble(tbImageWidth.Text);
             SelectedModel.SaveModel();
             btReload_Click(null, null);
             var info = new InformationWindow("Save successfully!\rLưu thành công!");
@@ -205,12 +205,12 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             }
             TextBox tb = sender as TextBox;
             string text = tb.Text;
-            int x = 0;
-            int y = 0;
+            double x = 0;
+            double y = 0;
             try
             {
-                y = Convert.ToInt32(text);
-                x = Convert.ToInt32(tbImageWidth.Text);
+                y = Convert.ToDouble(text);
+                x = Convert.ToDouble(tbImageWidth.Text);
             }
             catch
             {
@@ -238,12 +238,12 @@ namespace PickAndPlace.Views.ModelsManagerWindows
         internal void UpdateModel(ModelInfo model)
         {
             SelectedModel = model;
-            int w;
-            int h;
+            double w;
+            double h;
             try
             {
-                w = Convert.ToInt32(tbImageWidth.Text);
-                h = Convert.ToInt32(tbPcbHeight.Text);
+                w = Convert.ToDouble(tbImageWidth.Text);
+                h = Convert.ToDouble(tbPcbHeight.Text);
             }
             catch
             {

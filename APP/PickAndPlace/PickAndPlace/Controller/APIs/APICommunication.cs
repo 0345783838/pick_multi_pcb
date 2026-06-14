@@ -22,7 +22,7 @@ namespace PickAndPlace.Controllers.APIs
         public static Properties.Settings _param = Properties.Settings.Default;
 
 
-        public static GetCoordResponse GetRealCoord(string url, Image<Bgr, byte> image, double pcbWidth, double pcbHeight, int timeout = 10000)
+        public static GetCoordResponse GetRealCoord(string url, Image<Bgr, byte> image, double pcbWidth, double pcbHeight, int timeout = 15000)
         {
             var options = new RestClientOptions(url)
             {
