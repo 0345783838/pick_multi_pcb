@@ -2,7 +2,7 @@ import time
 from fastapi import APIRouter, File, UploadFile, HTTPException, Form, Query
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from src.service.calculate_robot_coord_service import CalculateRobotCoordService
+from src.service.calculate_robot_coord_service_new import CalculateRobotCoordService
 from src.service.calib_2d_service import Calib2dService
 from typing import List
 import numpy as np

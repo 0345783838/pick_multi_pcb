@@ -14,3 +14,5 @@ SERVICE/pick_and_place_service/main.dist/
 SERVICE/pick_and_place_service/build/
 SERVICE/pick_and_place_service/dist/
 SERVICE/pick_and_place_service/main.spec
+__pycache__/
+*.py[cod]

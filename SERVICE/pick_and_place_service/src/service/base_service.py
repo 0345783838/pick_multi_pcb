@@ -23,6 +23,8 @@ OFFSET_Y = config('OFFSET_Y', cast=float)
 
 TOOL_OFFSET_X = config('TOOL_OFFSET_X', cast=float)
 TOOL_OFFSET_Y = config('TOOL_OFFSET_Y', cast=float)
+TOOL_OFFSET_RZ = config('TOOL_OFFSET_RZ', cast=float)
+
 
 IMAGE_MATCHING_DLL = config('IMAGE_MATCHING_DLL')
 IMAGE_MATCHING_MAX_COUNT = config('IMAGE_MATCHING_MAX_COUNT', cast=int)
@@ -41,6 +43,7 @@ offset_y = OFFSET_Y
 
 tool_offset_x = TOOL_OFFSET_X
 tool_offset_y = TOOL_OFFSET_Y
+tool_offset_rz = TOOL_OFFSET_RZ
 
 image_matcher = ImageMatcher(IMAGE_MATCHING_DLL,
                              IMAGE_MATCHING_MAX_COUNT,
@@ -62,5 +65,6 @@ class BaseService:
             self.offset_y = offset_y
             self.tool_offset_x = tool_offset_x
             self.tool_offset_y = tool_offset_y
+            self.tool_offset_rz = tool_offset_rz
         else:
             pass
