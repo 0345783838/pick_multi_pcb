@@ -47,8 +47,9 @@
     <Reference Include="Emgu.CV.World, Version=4.1.1.3497, Culture=neutral, PublicKeyToken=7281126722ab4438, processorArchitecture=MSIL">
       <HintPath>..\packages\EMGU.CV.4.1.1.3497\lib\net35\Emgu.CV.World.dll</HintPath>
     </Reference>
-    <Reference Include="ImageCtlWPF">
-      <HintPath>..\dll\ImageCtlWPF.dll</HintPath>
+    <Reference Include="LincolnVision.ImageViewer, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\dll\LincolnVision.ImageViewer.dll</HintPath>
     </Reference>
     <Reference Include="LiveCharts, Version=0.9.7.0, Culture=neutral, PublicKeyToken=0bc1f845d1ebb8df, processorArchitecture=MSIL">
       <HintPath>..\packages\LiveCharts.0.9.7\lib\net45\LiveCharts.dll</HintPath>
@@ -160,6 +161,7 @@
     <Compile Include="Controller\Robot\NachiRobotClient.cs" />
     <Compile Include="Models\Calib2DResponse.cs" />
     <Compile Include="Models\GetCoordResponse.cs" />
+    <Compile Include="Models\RobotPose.cs" />
     <Compile Include="Security\LicensePayload.cs" />
     <Compile Include="Models\LogItem.cs" />
     <Compile Include="Models\ModelInfo.cs" />

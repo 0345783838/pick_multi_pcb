@@ -5,8 +5,8 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:PickAndPlace.Views.IntrinsicCalibWindows"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:myControl="clr-namespace:Heal.MyControl;assembly=ImageCtlWPF"
     xmlns:uc="clr-namespace:PickAndPlace.Resources.Styles"
+    xmlns:viewer="clr-namespace:LincolnVision.ImageViewer;assembly=LincolnVision.ImageViewer"
     Title="Intrinsic Calibration"
     Width="1300"
     Height="768"
@@ -130,10 +130,10 @@
                     BorderBrush="Gray"
                     BorderThickness="1"
                     Header="Camera View">
-                    <myControl:ImageBox
+                    <viewer:ImageViewerControl
                         x:Name="imbCamera"
                         Margin="5"
-                        Background="LightGray" />
+                        ViewerBackground="LightGray" />
 
                 </GroupBox>
             </Grid>
@@ -201,10 +201,10 @@
                     BorderBrush="Gray"
                     BorderThickness="1"
                     Header="Image Viewer">
-                    <myControl:ImageBox
+                    <viewer:ImageViewerControl
                         x:Name="imbImage"
                         Margin="5"
-                        Background="LightGray" />
+                        ViewerBackground="LightGray" />
                 </GroupBox>
             </Grid>
             <Grid Grid.Row="2">

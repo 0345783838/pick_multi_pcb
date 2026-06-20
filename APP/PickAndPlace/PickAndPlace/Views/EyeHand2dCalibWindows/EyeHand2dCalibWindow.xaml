@@ -5,9 +5,9 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:PickAndPlace.Views.EyeHand2dCalibWindows"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:myControl="clr-namespace:Heal.MyControl;assembly=ImageCtlWPF"
     xmlns:uc="clr-namespace:PickAndPlace.Resources.Styles"
     xmlns:utils="clr-namespace:PickAndPlace.Utils"
+    xmlns:viewer="clr-namespace:LincolnVision.ImageViewer;assembly=LincolnVision.ImageViewer"
     Title="Hand-Eye 2D Calibration"
     Width="1300"
     Height="786"
@@ -347,10 +347,10 @@
 
 
                     </Border>-->
-                    <myControl:ImageBox
+                    <viewer:ImageViewerControl
                         x:Name="imbImage"
-                        Background="DarkGray"
-                        PreviewMouseDown="imbImage_PreviewMouseDown" />
+                        PreviewMouseDown="imbImage_PreviewMouseDown"
+                        ViewerBackground="LightGray" />
                 </GroupBox>
             </Grid>
         </Grid>

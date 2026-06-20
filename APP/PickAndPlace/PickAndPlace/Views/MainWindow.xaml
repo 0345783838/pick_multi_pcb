@@ -6,8 +6,8 @@
     xmlns:local="clr-namespace:PickAndPlace"
     xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:myControl="clr-namespace:Heal.MyControl;assembly=ImageCtlWPF"
     xmlns:utils="clr-namespace:PickAndPlace.Utils"
+    xmlns:viewer="clr-namespace:LincolnVision.ImageViewer;assembly=LincolnVision.ImageViewer"
     Title="Picking PCB"
     Width="1280"
     Height="800"
@@ -257,11 +257,10 @@
                     BorderThickness="1"
                     FontWeight="Bold"
                     Header="Camera View">
-                    <myControl:ImageBox
+                    <viewer:ImageViewerControl
                         x:Name="imbImage"
                         Margin="5"
-                        Background="LightGray"
-                        PreviewMouseDown="imbImage_PreviewMouseDown" />
+                        ViewerBackground="LightGray" />
                 </GroupBox>
             </Grid>
             <Grid Grid.Column="1">

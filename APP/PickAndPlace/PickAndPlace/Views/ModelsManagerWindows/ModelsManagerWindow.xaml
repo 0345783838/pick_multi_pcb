@@ -5,12 +5,11 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:local="clr-namespace:PickAndPlace.Views.ModelsManagerWindows"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:myControl="clr-namespace:Heal.MyControl;assembly=ImageCtlWPF"
     xmlns:uc="clr-namespace:PickAndPlace.Resources.Styles"
     xmlns:utils="clr-namespace:PickAndPlace.Utils"
     Title="Model Manager"
     Width="600"
-    Height="630"
+    Height="690"
     Closing="Window_Closing"
     Icon="/Resources/Icons/condition.png"
     ResizeMode="NoResize"
@@ -28,9 +27,9 @@
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="60" />
-                <RowDefinition Height="250.04" />
-                <RowDefinition Height="170" />
-                <RowDefinition Height="1*" />
+                <RowDefinition Height="279" />
+                <RowDefinition Height="206" />
+                <RowDefinition />
             </Grid.RowDefinitions>
             <Grid Grid.Row="0">
                 <DockPanel Margin="10">
@@ -116,22 +115,26 @@
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal">
-                                    <Label Content="Create Time:" />
+                                    <Label Content="Create Time:  " />
                                     <Label x:Name="lbTimeCreate" Content="{Binding SelectedModel.CreatedTime, FallbackValue='-----'}" />
                                 </StackPanel>
 
                                 <StackPanel Orientation="Horizontal" />
                                 <StackPanel Orientation="Horizontal">
-                                    <Label Content="PCB Width:" />
-                                    <Label x:Name="lbPcbWidth" Content="{Binding SelectedModel.Width, FallbackValue='-----'}" />
+                                    <Label Content="Robot Teaching Pose:" />
+                                    <Label x:Name="lbRobotPose" Content="{Binding SelectedModel.Width, FallbackValue='-----'}" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
-                                    <Label Content="PCB Height:" />
-                                    <Label x:Name="lbPcbHeight" Content="{Binding SelectedModel.Height, FallbackValue='-----'}" />
+                                    <Label Content="Image Master Point:  " />
+                                    <Label x:Name="lbMasterPoint" Content="{Binding SelectedModel.Height, FallbackValue='-----'}" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <Label Content="Templates:" />
                                     <Label x:Name="lbTemplate" Content="{Binding SelectedModel.Templates.Count, FallbackValue='-----'}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Label Content="Offset Calculation:" />
+                                    <Label x:Name="lbOffsetCalculation" Content="{Binding SelectedModel.Templates.Count, FallbackValue='-----'}" />
                                 </StackPanel>
                             </StackPanel>
                         </ScrollViewer>
@@ -139,7 +142,7 @@
                 </GroupBox>
             </Grid>
             <Grid Grid.Row="1">
-                <GroupBox Margin="5,0,5,0" Header="Model Specifications:">
+                <GroupBox Margin="5,0,5,0" Header="Job Specifications:">
                     <GroupBox.HeaderTemplate>
                         <DataTemplate>
                             <Border>
@@ -152,80 +155,134 @@
                         </DataTemplate>
                     </GroupBox.HeaderTemplate>
                     <Grid>
-                        <Grid>
+                        <Grid Grid.Row="0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="2*" />
                                 <ColumnDefinition Width="10" />
                                 <ColumnDefinition Width="2*" />
                             </Grid.ColumnDefinitions>
                             <Grid Grid.Column="0">
-                                <DockPanel LastChildFill="False">
-                                    <StackPanel
-                                        Margin="35,25,0,5"
-                                        VerticalAlignment="Center"
-                                        DockPanel.Dock="Top">
-                                        <Label
-                                            Margin="0,-10,0,0"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Content="PCB Width"
-                                            FontSize="9" />
-                                        <TextBox
-                                            Name="tbImageWidth"
-                                            Width="65"
-                                            Height="25"
-                                            Margin="5,-5,0,0"
-                                            HorizontalContentAlignment="Center"
-                                            VerticalContentAlignment="Center"
-                                            BorderBrush="DarkGray"
-                                            FontSize="14"
-                                            FontWeight="Bold"
-                                            IsEnabled="{Binding IsMoldelSelected}"
-                                            IsReadOnly="False"
-                                            PreviewTextInput="NumberValidationTextBox"
-                                            Text="{Binding SelectedModel.Width, FallbackValue='0'}"
-                                            TextChanged="tbImageWidth_TextChanged" />
-                                    </StackPanel>
-                                    <Image
-                                        Width="170"
-                                        Margin="60,-10,0,0"
-                                        DockPanel.Dock="Top"
-                                        IsEnabled="{Binding IsModelSelected}"
-                                        Source="/Resources/Icons/pcb_rect.png">
-                                        <Image.Style>
-                                            <Style TargetType="Image">
-                                                <Style.Triggers>
-                                                    <Trigger Property="IsEnabled" Value="False">
-                                                        <Setter Property="Opacity" Value="0.3" />
-                                                    </Trigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Image.Style>
-                                    </Image>
-                                    <StackPanel Margin="5,-95,0,0" DockPanel.Dock="Left">
-                                        <Label
-                                            Margin="0,-10,0,0"
-                                            HorizontalAlignment="Center"
-                                            VerticalAlignment="Center"
-                                            Content="PCB Height"
-                                            FontSize="9" />
-                                        <TextBox
-                                            Name="tbPcbHeight"
-                                            Width="65"
-                                            Height="25"
-                                            Margin="5,-5,0,0"
-                                            HorizontalContentAlignment="Center"
-                                            VerticalContentAlignment="Center"
-                                            BorderBrush="DarkGray"
-                                            FontSize="14"
-                                            FontWeight="Bold"
-                                            IsEnabled="{Binding IsMoldelSelected}"
-                                            IsReadOnly="False"
-                                            PreviewTextInput="NumberValidationTextBox"
-                                            Text="{Binding SelectedModel.Height, FallbackValue='0'}"
-                                            TextChanged="tbPcbHeight_TextChanged" />
-                                    </StackPanel>
-                                </DockPanel>
+                                <GroupBox Margin="5" Header="Robot Teaching Pose">
+                                    <Grid>
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="3*" />
+                                            <RowDefinition Height="10" />
+                                            <RowDefinition Height="2*" />
+                                        </Grid.RowDefinitions>
+                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <StackPanel
+                                                Margin="0,10,5,-5"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Orientation="Horizontal">
+                                                <StackPanel Margin="0,-10,0,0" VerticalAlignment="Center">
+                                                    <Label
+                                                        Margin="0,-10,0,0"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Content="X"
+                                                        FontSize="12" />
+                                                    <TextBox
+                                                        Name="tbRobotX"
+                                                        Width="65"
+                                                        Height="25"
+                                                        Margin="5,-5,0,0"
+                                                        HorizontalContentAlignment="Center"
+                                                        VerticalContentAlignment="Center"
+                                                        BorderBrush="DarkGray"
+                                                        FontSize="14"
+                                                        FontWeight="Bold"
+                                                        IsReadOnly="False" />
+                                                </StackPanel>
+                                                <StackPanel Margin="15,-10,0,0" VerticalAlignment="Center">
+                                                    <Label
+                                                        Margin="0,-10,0,0"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Content="Y"
+                                                        FontSize="12" />
+                                                    <TextBox
+                                                        Name="tbRobotY"
+                                                        Width="65"
+                                                        Height="25"
+                                                        Margin="5,-5,0,0"
+                                                        HorizontalContentAlignment="Center"
+                                                        VerticalContentAlignment="Center"
+                                                        BorderBrush="DarkGray"
+                                                        FontSize="14"
+                                                        FontWeight="Bold"
+                                                        IsReadOnly="False" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                            <StackPanel
+                                                Margin="0,10,5,-5"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Orientation="Horizontal">
+                                                <StackPanel Margin="0,10,0,0" VerticalAlignment="Center">
+                                                    <Label
+                                                        Margin="0,-10,0,0"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Content="Z"
+                                                        FontSize="12" />
+                                                    <TextBox
+                                                        Name="tbRobotZ"
+                                                        Width="65"
+                                                        Height="25"
+                                                        Margin="5,-5,0,0"
+                                                        HorizontalContentAlignment="Center"
+                                                        VerticalContentAlignment="Center"
+                                                        BorderBrush="DarkGray"
+                                                        FontSize="14"
+                                                        FontWeight="Bold"
+                                                        IsReadOnly="False" />
+                                                </StackPanel>
+                                                <StackPanel Margin="15,10,0,0" VerticalAlignment="Center">
+                                                    <Label
+                                                        Margin="0,-10,0,0"
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Content="RZ"
+                                                        FontSize="12" />
+                                                    <TextBox
+                                                        Name="tbRobotRZ"
+                                                        Width="65"
+                                                        Height="25"
+                                                        Margin="5,-5,0,0"
+                                                        HorizontalContentAlignment="Center"
+                                                        VerticalContentAlignment="Center"
+                                                        BorderBrush="DarkGray"
+                                                        FontSize="14"
+                                                        FontWeight="Bold"
+                                                        IsReadOnly="False" />
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <Grid Grid.Row="1">
+                                            <Border
+                                                Height="1"
+                                                Margin="15,0,15,0"
+                                                Background="DarkGray" />
+                                        </Grid>
+                                        <Grid Grid.Row="2">
+                                            <uc:CustomButton2
+                                                x:Name="btnGetRobotCoord"
+                                                Title="Get Robot&#x0A;COORDINATE"
+                                                Width="140"
+                                                Height="55"
+                                                EndColor="#1C4D8D"
+                                                FontSize="12"
+                                                IconHeight="27"
+                                                IconWidth="30"
+                                                LeftIcon="/Resources/Icons/geolocation.png"
+                                                MouseDown="btnGetRobotCoord_MouseDown"
+                                                StartColor="#C8AAAA" />
+
+                                        </Grid>
+                                    </Grid>
+                                </GroupBox>
                             </Grid>
                             <Grid Grid.Column="1">
                                 <Border
@@ -234,7 +291,7 @@
                                     Background="DarkGray" />
                             </Grid>
                             <Grid Grid.Column="2">
-                                <GroupBox Margin="5" Header="Template Setup">
+                                <GroupBox Margin="5" Header="Master Image">
                                     <Grid>
                                         <ListBox
                                             x:Name="lbThumbList"
@@ -319,23 +376,21 @@
                 </GroupBox>
             </Grid>
             <Grid Grid.Row="3">
-                <Grid Grid.Row="2">
-                    <Grid>
-                        <uc:CustomButton
-                            x:Name="btnSave"
-                            Title="Save"
-                            Width="150"
-                            Height="70"
-                            Margin="15,0,5,5"
-                            EndColor="#e8b595"
-                            IconHeight="40"
-                            IconWidth="40"
-                            IsEnabled="{Binding CanSave}"
-                            LeftIcon="/Resources/Icons/save-2.png"
-                            MouseDown="btnSave_MouseDown"
-                            StartColor="#b190ba"
-                            Value="MODEL" />
-                    </Grid>
+                <Grid>
+                    <uc:CustomButton
+                        x:Name="btnSave"
+                        Title="Save"
+                        Width="150"
+                        Height="70"
+                        Margin="15,0,5,5"
+                        EndColor="#e8b595"
+                        IconHeight="40"
+                        IconWidth="40"
+                        IsEnabled="{Binding CanSave}"
+                        LeftIcon="/Resources/Icons/save-2.png"
+                        MouseDown="btnSave_MouseDown"
+                        StartColor="#b190ba"
+                        Value="MODEL" />
                 </Grid>
             </Grid>
         </Grid>

@@ -16,12 +16,12 @@ namespace PickAndPlace.Models
         Properties.Settings _param = Properties.Settings.Default;
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-        public string Name { get; set; }
-        public double Width { get; set; }
-        public double Height { get; set; }
         public string CreatedTime { get; set; }
-        private List<Template> _templates;
-        public List<Template> Templates
+        public string Name { get; set; }
+        public string BigImagePath { get; set; }
+        public RobotPose PickPose { get; set; }
+        private Template _templates;
+        public Template Templates
         {
             get => _templates;
             set
@@ -33,6 +33,8 @@ namespace PickAndPlace.Models
                 }
             }
         }
+
+
 
 
         public ModelInfo(string name, double width, double height, List<Template> templates, string createdTime) => (Name, Width, Height, Templates, CreatedTime) = (name, width, height, templates, createdTime);

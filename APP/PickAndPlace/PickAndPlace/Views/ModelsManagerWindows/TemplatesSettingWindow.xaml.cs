@@ -1,49 +1,55 @@
-﻿using Emgu.CV.Structure;
-using Emgu.CV;
+﻿using Emgu.CV;
+using Emgu.CV.CvEnum;
+using Emgu.CV.Structure;
+using LincolnVision.ImageViewer;
 using PickAndPlace.Controllers.Camera;
 using PickAndPlace.Models;
+using PickAndPlace.Utils;
 using PickAndPlace.Views.UtilitiesWindows;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
-using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
-using System.Drawing;
-using System.Text.RegularExpressions;
-using Emgu.CV.CvEnum;
-using Point = System.Drawing.Point;
-using Emgu.CV.Flann;
-using PickAndPlace.Utils;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using Color = System.Windows.Media.Color;
 
 namespace PickAndPlace.Views.ModelsManagerWindows
 {
     /// <summary>
     /// Interaction logic for TemplatesSettingWindow.xaml
+    /// Integrated with LincolnVision.ImageViewer DLL.
+    /// C# 7.3 compatible code-behind.
     /// </summary>
     public partial class TemplatesSettingWindow : Window, INotifyPropertyChanged
     {
         private static NLog.Logger _logger = NLog.LogManager.GetCurrentClassLogger();
         Properties.Settings _param = Properties.Settings.Default;
+
         public event PropertyChangedEventHandler PropertyChanged;
+
         protected void OnPropertyChanged([System.Runtime.CompilerServices.CallerMemberName] string propertyName = null)
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            PropertyChangedEventHandler handler = PropertyChanged;
+            if (handler != null)
+                handler(this, new PropertyChangedEventArgs(propertyName));
         }
 
-        private ModelInfo _model;
-        ModelsManagerWindow _modelsWindow;
+        private readonly ModelInfo _model;
+        private readonly ModelsManagerWindow _modelsWindow;
 
         public ObservableCollection<Template> TemplatesList { get; set; } = new ObservableCollection<Template>();
-        private Template _selectedTemplate;
 
+        private Template _selectedTemplate;
         public Template SelectedTemplate
         {
-            get => _selectedTemplate;
+            get { return _selectedTemplate; }
             set
             {
                 if (_selectedTemplate != value)
@@ -55,54 +61,93 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             }
         }
 
-        private void OnTemplateSelectionChanged()
-        {
-            if (SelectedTemplate == null)
-            {
-                imbTemplate.Source = null; 
-            }
-            else
-            {
-                imbTemplate.Source = Converter.BitmapToBitmapSource(SelectedTemplate.Image.Bitmap);
-            }
-        }
-
-        CameraManager _cameraManager;
-        LincolnCamera _cam;
+        private CameraManager _cameraManager;
+        private LincolnCamera _cam;
         private Image<Bgr, byte> _curImage;
-        private Image<Bgr, byte> _showingImage;
-        private bool _addingRoi = false;
+        private Image<Bgr, byte> _curTempImage;
 
-        private Rectangle _curDrawingRoi;
+        private bool _addingRoi;
+        private bool _updatingAngleFromViewer;
 
-        public Rectangle CurDrawingRoi
+        private double _roiCx;
+        public double RoiCx
         {
-            get => _curDrawingRoi;
+            get { return _roiCx; }
             set
             {
-                if (_curDrawingRoi != value)
+                if (Math.Abs(_roiCx - value) > 0.0001)
                 {
-                    _curDrawingRoi = value;
+                    _roiCx = value;
                     OnPropertyChanged();
-                    OnPropertyChanged(nameof(CanAddRemove));
                 }
             }
         }
 
-        private Rectangle _curHandle;
-        private bool _isSelectingRoi = false;
-        private bool _inRectPos;
-        private bool _inHandlePos;
-        private bool _isResizing;
-        private bool _isMoving;
-        private System.Windows.Point _clickPosition;
-        private Rectangle _tempOriginRects;
-        private Image<Bgr, byte> _curTempImage;
+        private double _roiCy;
+        public double RoiCy
+        {
+            get { return _roiCy; }
+            set
+            {
+                if (Math.Abs(_roiCy - value) > 0.0001)
+                {
+                    _roiCy = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
 
-        public bool CameraConnected { get; set; } = false;
-        public bool CanSave { get; set; } = false;
-        public bool CanAddRemove => CurDrawingRoi != Rectangle.Empty;
-        public bool CanProcesImage { get; set; } = false;
+        private double _roiWidth;
+        public double RoiWidth
+        {
+            get { return _roiWidth; }
+            set
+            {
+                if (Math.Abs(_roiWidth - value) > 0.0001)
+                {
+                    _roiWidth = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private double _roiHeight;
+        public double RoiHeight
+        {
+            get { return _roiHeight; }
+            set
+            {
+                if (Math.Abs(_roiHeight - value) > 0.0001)
+                {
+                    _roiHeight = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        private double _roiAngleDeg;
+        public double RoiAngleDeg
+        {
+            get { return _roiAngleDeg; }
+            set
+            {
+                if (Math.Abs(_roiAngleDeg - value) > 0.0001)
+                {
+                    _roiAngleDeg = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        public bool CameraConnected { get; set; }
+        public bool CanSave { get; set; }
+        public bool CanProcesImage { get; set; }
+
+        public bool CanAddRemove
+        {
+            get { return GetCurrentRotatedRectangle() != null; }
+        }
+
         public TemplatesSettingWindow(ModelsManagerWindow window, ModelInfo model)
         {
             InitializeComponent();
@@ -111,6 +156,7 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             DataContext = this;
             Init();
         }
+
         private void Init()
         {
             _cameraManager = CameraManager.GetInstance();
@@ -120,52 +166,48 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             {
                 cbbCamSn.Items.Add(camInfoList[i].SN);
             }
-            
+
             for (int i = 0; i < _model.Templates.Count; i++)
             {
                 TemplatesList.Add(_model.Templates[i]);
             }
+
+            InitImageViewer();
+            ResetRoiInfo();
         }
 
-        private void btnCaptureImage_MouseDown(object sender, MouseButtonEventArgs e)
+        private void InitImageViewer()
         {
-            var bitmap = _cam.TriggerAndGetFrame();
-            //System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(@"D:\huynhvc\OTHERS\pick_and_place\program\pick_and_place\Image_20260306205408882.bmp");
-            _curImage = new Image<Bgr, byte>(bitmap);
-            _showingImage = _curImage.Copy();
-            UpdateCameraImage(bitmap);
-            CanProcesImage = true;
-            OnPropertyChanged(nameof(CanProcesImage));
+            imageViewer.CurrentTool = DrawingTool.Select;
+            imageViewer.ShowCrosshair = true;
+            imageViewer.ShowImageBorder = true;
+            imageViewer.ResetViewOnDoubleClick = true;
+            imageViewer.EnableMiddleButtonPan = true;
+            imageViewer.EnableRightButtonPan = true;
+
+            imageViewer.ShapeCreated += ImageViewer_ShapeCreated;
+            imageViewer.ShapeChanged += ImageViewer_ShapeChanged;
+            imageViewer.ShapeSelectionChanged += ImageViewer_ShapeSelectionChanged;
         }
 
-        private void UpdateCameraImage(Bitmap image)
+        private void OnTemplateSelectionChanged()
         {
-            if (image == null)
+            if (SelectedTemplate == null)
             {
-                imbCameraImage.Source = null;
-            }
-            else if (imbCameraImage.Source == null)
-            {
-                imbCameraImage.SourceFromBitmap = image;
-                var scale = GetFittedZoomScale(imbCameraImage, image.Width, image.Height);
-                imbCameraImage.SetZoomScale(scale);
+                imbTemplate.Source = null;
             }
             else
             {
-                imbCameraImage.SourceFromBitmap = image;
+                imbTemplate.Source = Converter.BitmapToBitmapSource(SelectedTemplate.Image.Bitmap);
             }
-        }
-        private double GetFittedZoomScale(object imb, double imageWidth, double imageHeight)
-        {
-            var imageBox = imb as Heal.MyControl.ImageBox;
-            var imageBoxWidth = imageBox.ActualWidth;
-            var imageBoxHeight = imageBox.ActualHeight;
-            var scale = Math.Min(imageBoxWidth / imageWidth, imageBoxHeight / imageHeight);
-            return scale;
         }
 
         private async void btnConnectCamera_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            CameraConnected = true;
+            OnPropertyChanged(nameof(CameraConnected));
+            return;
+
             if (cbbCamSn.SelectedItem == null)
             {
                 var error = new ErrorWindow("Please choose a camera!\rHãy chọn camera!");
@@ -175,35 +217,60 @@ namespace PickAndPlace.Views.ModelsManagerWindows
 
             string camSn = cbbCamSn.SelectedValue.ToString();
 
-            //string camSn = "aaaa";
             try
             {
                 await Task.Run(() =>
                 {
-                    //// Debug
-                    //CameraConnected = true;
-                    //OnPropertyChanged(nameof(CameraConnected));
                     if (_cam != null && _cam.IsOpen())
                         return;
 
                     _cam = _cameraManager.GetCamera(camSn) as LincolnCamera;
 
-                    if (!_cam.IsOpen())
-                        throw new Exception($"Cannot open camera {camSn}!");
+                    if (_cam == null || !_cam.IsOpen())
+                        throw new Exception(string.Format("Cannot open camera {0}!", camSn));
+
                     _cam.SetWorkMode(CameraWorkMode.SoftwareTrigger);
                     _cam.Start();
+
                     CameraConnected = true;
                     OnPropertyChanged(nameof(CameraConnected));
                 });
             }
             catch (Exception ex)
             {
-                var error = new ErrorWindow($"{ex.Message}\rKhông mở được camera {camSn}!");
+                var error = new ErrorWindow(string.Format("{0}\rKhông mở được camera {1}!", ex.Message, camSn));
                 error.ShowDialog();
             }
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void btnCaptureImage_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            //Bitmap bitmap = _cam.TriggerAndGetFrame();
+            // Debug sample:
+            Bitmap bitmap = new Bitmap(@"D:\huynhvc\OTHERS\pick_and_place\program\pick_and_place\Image_20260306205408882.bmp");
+
+            _curImage = new Image<Bgr, byte>(bitmap);
+            _curTempImage = null;
+            imbTemplate.Source = null;
+
+            imageViewer.ClearShapes();
+            BitmapSource source = Converter.BitmapToBitmapSource(bitmap);
+            imageViewer.LoadImage(source);
+            imageViewer.Focus();
+
+            CanProcesImage = true;
+            OnPropertyChanged(nameof(CanProcesImage));
+            OnPropertyChanged(nameof(CanAddRemove));
+
+            ResetRoiInfo();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            imageViewer.Focus();
+        }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
         {
             if (_cam != null && _cam.IsOpen())
             {
@@ -212,18 +279,59 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             }
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void btnAddRoi_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            if (_curImage == null)
+                return;
 
+            if (_addingRoi)
+            {
+                SetAddRoiButtonNormal();
+                imageViewer.CurrentTool = DrawingTool.Select;
+                _addingRoi = false;
+                return;
+            }
+
+            SetAddRoiButtonActive();
+            imageViewer.CurrentTool = DrawingTool.RotatedRectangle;
+            imageViewer.Focus();
+            _addingRoi = true;
+        }
+
+        private void btnRemoveRoi_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            imageViewer.ClearShapes();
+            _curTempImage = null;
+            imbTemplate.Source = null;
+            ResetRoiInfo();
+            OnPropertyChanged(nameof(CanAddRemove));
         }
 
         private void btnAddTemplate_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            var template = new Models.Template(TemplatesList.Count, _curTempImage, $"{_param.MODELS_PATH}/{_model.Name}/{timestamp}.png");
+            VisionShape roi = GetCurrentRotatedRectangle();
+            if (roi == null || _curTempImage == null)
+            {
+                var error = new ErrorWindow("Please create a rotated ROI first!\rHãy tạo ROI xoay trước!");
+                error.ShowDialog();
+                return;
+            }
+
+            // Đây là thông số mày cần để lưu master point.
+            // Nếu Template/ModelInfo của mày có field riêng thì gán thêm tại đây.
+            MasterRoiInfo roiInfo = GetCurrentMasterRoiInfo();
+            _logger.Info(string.Format(
+                "Master ROI: Cx={0:F3}, Cy={1:F3}, W={2:F3}, H={3:F3}, Angle={4:F3}",
+                roiInfo.Cx, roiInfo.Cy, roiInfo.Width, roiInfo.Height, roiInfo.AngleDeg));
+
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var template = new Models.Template(
+                TemplatesList.Count,
+                _curTempImage,
+                string.Format("{0}/{1}/{2}.png", _param.MODELS_PATH, _model.Name, timestamp));
+
             TemplatesList.Add(template);
-            CurDrawingRoi = Rectangle.Empty;
-            UpdateDrawingDetails();
+
             CanSave = true;
             OnPropertyChanged(nameof(CanSave));
         }
@@ -231,47 +339,27 @@ namespace PickAndPlace.Views.ModelsManagerWindows
         private void btnCancel_MouseDown(object sender, MouseButtonEventArgs e)
         {
             var warning = new WarningWindow("Are you sure to cancel processes?");
-            var res = warning.ShowDialog();
+            bool? res = warning.ShowDialog();
             if (res == true)
-            {
-                this.Close();
-            }
+                Close();
         }
 
         private void btnSave_MouseDown(object sender, MouseButtonEventArgs e)
         {
             _model.Templates = TemplatesList.ToList();
+
+            // Nếu cần lưu master point vào ModelInfo thì thêm field vào ModelInfo rồi gán ở đây.
+            // Ví dụ:
+            // MasterRoiInfo roi = GetCurrentMasterRoiInfo();
+            // _model.MasterPointImageX = roi.Cx;
+            // _model.MasterPointImageY = roi.Cy;
+            // _model.MasterPointAngleDeg = roi.AngleDeg;
+
             _modelsWindow.UpdateModel(_model);
+
             var info = new InformationWindow("Save successfully!");
             info.ShowDialog();
-            this.Close();
-        }
-
-        private void btnAddRoi_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (_addingRoi)
-            {
-                btnAddRoi.StartColor = System.Windows.Media.Color.FromRgb(0xCC, 0xFF, 0xAA);
-                btnAddRoi.EndColor = System.Windows.Media.Color.FromRgb(0x1E, 0x5B, 0x53);
-                imbCameraImage.ResetDrawRectMode();
-                this.Cursor = Cursors.Arrow;
-                _addingRoi = false;
-            }
-            else
-            {
-                btnAddRoi.StartColor = Colors.DarkOrange;
-                btnAddRoi.EndColor = Colors.DarkOrange;
-                imbCameraImage.SetDrawRectMode();
-                this.Cursor = Cursors.Cross;
-                _addingRoi = true;
-            }
-        }
-
-        private void btnRemoveRoi_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            CurDrawingRoi = Rectangle.Empty;
-            OnPropertyChanged(nameof(CurDrawingRoi));
-            UpdateDrawingDetails();
+            Close();
         }
 
         private void udtbAngle_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -282,8 +370,13 @@ namespace PickAndPlace.Views.ModelsManagerWindows
 
         private void udtbAngle_ValueChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (_curImage == null) return;
-            // Check valid angle
+            if (_updatingAngleFromViewer)
+                return;
+
+            VisionShape roi = GetCurrentRotatedRectangle();
+            if (roi == null)
+                return;
+
             double value;
             try
             {
@@ -294,363 +387,255 @@ namespace PickAndPlace.Views.ModelsManagerWindows
                 return;
             }
 
-            _showingImage = RotateImage(_curImage, value);
-            UpdateCameraImage(_showingImage.Bitmap);
-            UpdateDrawingDetails();
+            roi.AngleDeg = value;
+            imageViewer.InvalidateVisual();
+            UpdateCurrentRoiFromViewer();
         }
-        //public static Image<Bgr, byte> RotateImage(Image<Bgr, byte> src, double angle)
-        //{
-        //    int w = src.Width;
-        //    int h = src.Height;
 
-        //    PointF center = new PointF(w / 2f, h / 2f);
-
-        //    // tạo matrix xoay
-        //    Mat rotMat = new Mat();
-        //    CvInvoke.GetRotationMatrix2D(center, angle, 1.0, rotMat);
-
-        //    // ảnh output
-        //    Image<Bgr, byte> dst = new Image<Bgr, byte>(w, h);
-
-        //    CvInvoke.WarpAffine(
-        //        src,
-        //        dst,
-        //        rotMat,
-        //        new System.Drawing.Size(w, h),
-        //        Inter.Linear,
-        //        Warp.Default,
-        //        BorderType.Constant,
-        //        new MCvScalar(0, 0, 0)
-        //    );
-
-        //    return dst;
-        //}
-        public static Image<Bgr, byte> RotateImage(Image<Bgr, byte> src, double angle)
+        private void ImageViewer_ShapeCreated(object sender, ShapeEventArgs e)
         {
-            int w = src.Width;
-            int h = src.Height;
+            if (e == null || e.Shape == null)
+                return;
 
-            PointF center = new PointF(w / 2f, h / 2f);
+            // Cửa sổ này chỉ cần 1 ROI master dạng rotated rectangle.
+            if (e.Shape.Kind != VisionShapeKind.RotatedRectangle)
+            {
+                imageViewer.Shapes.Remove(e.Shape);
+                return;
+            }
 
-            Mat rotMat = new Mat();
-            CvInvoke.GetRotationMatrix2D(center, angle, 1.0, rotMat);
+            // Chỉ giữ ROI mới nhất.
+            List<VisionShape> removeList = new List<VisionShape>();
+            foreach (VisionShape shape in imageViewer.Shapes)
+            {
+                if (!object.ReferenceEquals(shape, e.Shape))
+                    removeList.Add(shape);
+            }
 
-            double rad = angle * Math.PI / 180.0;
-            double sin = Math.Abs(Math.Sin(rad));
-            double cos = Math.Abs(Math.Cos(rad));
+            for (int i = 0; i < removeList.Count; i++)
+                imageViewer.Shapes.Remove(removeList[i]);
 
-            int newW = (int)(h * sin + w * cos);
-            int newH = (int)(h * cos + w * sin);
+            imageViewer.CurrentTool = DrawingTool.Select;
+            _addingRoi = false;
+            SetAddRoiButtonNormal();
 
-            // dịch ảnh vào giữa canvas mới
-            var m = new Emgu.CV.Matrix<double>(2, 3);
-            rotMat.CopyTo(m);
+            UpdateCurrentRoiFromViewer();
+            OnPropertyChanged(nameof(CanAddRemove));
+        }
 
-            m[0, 2] += (newW / 2.0) - center.X;
-            m[1, 2] += (newH / 2.0) - center.Y;
+        private void ImageViewer_ShapeChanged(object sender, ShapeEventArgs e)
+        {
+            UpdateCurrentRoiFromViewer();
+        }
 
-            Image<Bgr, byte> dst = new Image<Bgr, byte>(newW, newH);
+        private void ImageViewer_ShapeSelectionChanged(object sender, EventArgs e)
+        {
+            UpdateCurrentRoiFromViewer();
+        }
 
-            CvInvoke.WarpAffine(
+        private VisionShape GetCurrentRotatedRectangle()
+        {
+            if (imageViewer == null)
+                return null;
+
+            VisionShape selected = imageViewer.SelectedShape;
+            if (selected != null && selected.Kind == VisionShapeKind.RotatedRectangle)
+                return selected;
+
+            foreach (VisionShape shape in imageViewer.Shapes)
+            {
+                if (shape.Kind == VisionShapeKind.RotatedRectangle)
+                    return shape;
+            }
+
+            return null;
+        }
+
+        private void UpdateCurrentRoiFromViewer()
+        {
+            VisionShape roi = GetCurrentRotatedRectangle();
+            if (roi == null || roi.IsEmpty)
+            {
+                _curTempImage = null;
+                if (SelectedTemplate == null)
+                    imbTemplate.Source = null;
+
+                ResetRoiInfo();
+                OnPropertyChanged(nameof(CanAddRemove));
+                return;
+            }
+
+            RoiCx = Math.Round(roi.Cx, 3);
+            RoiCy = Math.Round(roi.Cy, 3);
+            RoiWidth = Math.Round(roi.Width, 3);
+            RoiHeight = Math.Round(roi.Height, 3);
+            RoiAngleDeg = Math.Round(roi.AngleDeg, 3);
+
+            _updatingAngleFromViewer = true;
+            try
+            {
+                udtbAngle.Value = RoiAngleDeg;
+            }
+            finally
+            {
+                _updatingAngleFromViewer = false;
+            }
+
+            UpdateTemplatePreviewByRoi(roi);
+            OnPropertyChanged(nameof(CanAddRemove));
+        }
+
+        private void UpdateTemplatePreviewByRoi(VisionShape roi)
+        {
+            if (_curImage == null || roi == null || roi.IsEmpty)
+                return;
+
+            try
+            {
+                Image<Bgr, byte> cropped = CropRotatedRectangle(_curImage, roi);
+
+                if (_curTempImage != null)
+                    _curTempImage.Dispose();
+
+                _curTempImage = cropped;
+                imbTemplate.Source = Converter.BitmapToBitmapSource(_curTempImage.Bitmap);
+            }
+            catch (Exception ex)
+            {
+                _logger.Warn(ex, "Cannot crop rotated ROI preview.");
+            }
+        }
+
+        private static Image<Bgr, byte> CropRotatedRectangle(Image<Bgr, byte> src, VisionShape roi)
+        {
+            int outW = Math.Max(1, Convert.ToInt32(Math.Round(roi.Width)));
+            int outH = Math.Max(1, Convert.ToInt32(Math.Round(roi.Height)));
+
+            System.Windows.Point[] pts = roi.GetRotatedRectanglePoints();
+
+            PointF[] srcPts = new PointF[4];
+            srcPts[0] = new PointF((float)pts[0].X, (float)pts[0].Y);
+            srcPts[1] = new PointF((float)pts[1].X, (float)pts[1].Y);
+            srcPts[2] = new PointF((float)pts[2].X, (float)pts[2].Y);
+            srcPts[3] = new PointF((float)pts[3].X, (float)pts[3].Y);
+
+            PointF[] dstPts = new PointF[4];
+            dstPts[0] = new PointF(0, 0);
+            dstPts[1] = new PointF(outW - 1, 0);
+            dstPts[2] = new PointF(outW - 1, outH - 1);
+            dstPts[3] = new PointF(0, outH - 1);
+
+            Mat transform = CvInvoke.GetPerspectiveTransform(srcPts, dstPts);
+            Image<Bgr, byte> dst = new Image<Bgr, byte>(outW, outH);
+
+            CvInvoke.WarpPerspective(
                 src,
                 dst,
-                m,
-                new System.Drawing.Size(newW, newH),
+                transform,
+                new System.Drawing.Size(outW, outH),
                 Inter.Linear,
                 Warp.Default,
                 BorderType.Constant,
-                new MCvScalar(0, 0, 0)
-            );
+                new MCvScalar(0, 0, 0));
 
+            transform.Dispose();
             return dst;
         }
 
-        private void imbCameraImage_MouseClick(object sender, EventArgs e)
+        public MasterRoiInfo GetCurrentMasterRoiInfo()
         {
-            if (_inHandlePos) return;
-            if (_showingImage == null) return;
+            VisionShape roi = GetCurrentRotatedRectangle();
+            if (roi == null)
+                return null;
 
-            var control = sender as Heal.MyControl.ImageBox;
-            System.Windows.Point p = Mouse.GetPosition(control);
-            double scale = control.ZoomScale;
-            double x = control.TranslateX;
-            double y = control.TranslateY;
-            System.Windows.Point selectedPoint = new System.Windows.Point(p.X / scale - x / scale, p.Y / scale - y / scale);
+            MasterRoiInfo info = new MasterRoiInfo();
+            info.Cx = roi.Cx;
+            info.Cy = roi.Cy;
+            info.Width = roi.Width;
+            info.Height = roi.Height;
+            info.AngleDeg = roi.AngleDeg;
 
-            if (CurDrawingRoi.Contains((int)selectedPoint.X, (int)selectedPoint.Y))
-            {
-                _isSelectingRoi = true;
-                SelectedTemplate = null;
-                tbRoiX.Focus();
-            }
-            else
-            {
-                _isSelectingRoi = false;
-            }
-            UpdateDrawingDetails();
+            System.Windows.Point[] pts = roi.GetRotatedRectanglePoints();
+            info.Points = pts;
+
+            return info;
         }
 
-        private void imbCameraImage_MouseMove(object sender, MouseEventArgs e)
+        private void ResetRoiInfo()
         {
-            if (!_isSelectingRoi) return;
+            RoiCx = 0;
+            RoiCy = 0;
+            RoiWidth = 0;
+            RoiHeight = 0;
+            RoiAngleDeg = 0;
 
-            _inRectPos = false;
-            _inHandlePos = false;
-            var control = sender as Heal.MyControl.ImageBox;
-            System.Windows.Point p = Mouse.GetPosition(control);
-            double scale = control.ZoomScale;
-            double x = control.TranslateX;
-            double y = control.TranslateY;
-            var clickPosition = new System.Windows.Point(p.X / scale - x / scale, p.Y / scale - y / scale);
-
-           
-            if (!_isMoving || !_isResizing)
+            _updatingAngleFromViewer = true;
+            try
             {
-                // Check if mouse is in rect
-                if (CurDrawingRoi.Contains((int)clickPosition.X, (int)clickPosition.Y))
-                {
-                    _inRectPos = true;
-                }
-                if (_inRectPos) imbCameraImage.SetDrawRectMode(); else imbCameraImage.ResetDrawRectMode();
-                // Check mouse if is any handle
-                if (_curHandle.Contains((int)clickPosition.X, (int)clickPosition.Y))
-                {
-                    _inHandlePos = true;
-                }
+                udtbAngle.Value = 0;
             }
-
-            // Case moving rect
-            if (_isMoving)
+            finally
             {
-                imbCameraImage.SetDrawRectMode();
-                int shiftX = Convert.ToInt32(clickPosition.X - _clickPosition.X);
-                int shiftY = Convert.ToInt32(clickPosition.Y - _clickPosition.Y);
-
-                if (_tempOriginRects == Rectangle.Empty) return;
-                if (CurDrawingRoi == Rectangle.Empty) return;
-                CurDrawingRoi = new Rectangle(_tempOriginRects.X + shiftX, _tempOriginRects.Y + shiftY, _tempOriginRects.Width, _tempOriginRects.Height);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-              
-                UpdateDrawingDetails();
-            }
-
-            // Case resizing rect
-            if (_isResizing)
-            {
-                imbCameraImage.SetDrawRectMode();
-                int shiftX = Convert.ToInt32(clickPosition.X - _clickPosition.X);
-                int shiftY = Convert.ToInt32(clickPosition.Y - _clickPosition.Y);
-
-                if (_tempOriginRects == Rectangle.Empty) return;
-                if (CurDrawingRoi == Rectangle.Empty) return;
-
-                var newWidth = _tempOriginRects.Width + shiftX;
-                var newHeight = _tempOriginRects.Height + shiftY;
-
-                CurDrawingRoi = new Rectangle(_tempOriginRects.X, _tempOriginRects.Y, newWidth, newHeight);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-                UpdateDrawingDetails();
+                _updatingAngleFromViewer = false;
             }
         }
 
-        private void imbCameraImage_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        private void SetAddRoiButtonActive()
         {
-            if (_inHandlePos && !_isResizing && !_addingRoi && !_isMoving)
-            {
-                imbCameraImage.SetDrawRectMode();
-                _isResizing = true;
-                var control = sender as Heal.MyControl.ImageBox;
-                System.Windows.Point p = Mouse.GetPosition(control);
-                double scale = control.ZoomScale;
-                double x = control.TranslateX;
-                double y = control.TranslateY;
-                _clickPosition = new System.Windows.Point(p.X / scale - x / scale, p.Y / scale - y / scale);
-                _tempOriginRects = new Rectangle(CurDrawingRoi.X, CurDrawingRoi.Y, CurDrawingRoi.Width, CurDrawingRoi.Height);
-                return;
-            }
-
-            if (_inRectPos && !_isMoving && !_addingRoi && !_isResizing )
-            {
-                _isMoving = true;
-                var control = sender as Heal.MyControl.ImageBox;
-                System.Windows.Point p = Mouse.GetPosition(control);
-                double scale = control.ZoomScale;
-                double x = control.TranslateX;
-                double y = control.TranslateY;
-                _clickPosition = new System.Windows.Point(p.X / scale - x / scale, p.Y / scale - y / scale);
-                _tempOriginRects = new Rectangle(CurDrawingRoi.X, CurDrawingRoi.Y, CurDrawingRoi.Width, CurDrawingRoi.Height);
-                return;
-            }
+            btnAddRoi.StartColor = Colors.DarkOrange;
+            btnAddRoi.EndColor = Colors.DarkOrange;
+            Cursor = Cursors.Cross;
         }
 
-        private void imbCameraImage_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+        private void SetAddRoiButtonNormal()
         {
-            if (_showingImage == null)
-                return;
-
-            if (_isMoving)
-            {
-                _isMoving = false;
-                imbCameraImage.ResetDrawRectMode();
-                _tempOriginRects = Rectangle.Empty;
-                UpdateDrawingDetails();
-            }
-            if (_isResizing)
-            {
-                _isResizing = false;
-                imbCameraImage.ResetDrawRectMode();
-                _tempOriginRects = Rectangle.Empty;
-                UpdateDrawingDetails();
-            }
-
-            if (_addingRoi)
-            {
-                var rect = imbCameraImage.GetSelectRectangle();
-                if (rect == new Rect())
-                    return;
-                _addingRoi = false;
-                CurDrawingRoi = new System.Drawing.Rectangle(Convert.ToInt32(rect.X), Convert.ToInt32(rect.Y), Convert.ToInt32(rect.Width), Convert.ToInt32(rect.Height));
-                OnPropertyChanged(nameof(CurDrawingRoi));
-
-                this.Cursor = Cursors.Arrow;
-                this.imbCameraImage.ResetDrawRectMode();
-                btnAddRoi.StartColor = System.Windows.Media.Color.FromRgb(0xCC, 0xFF, 0xAA);
-                btnAddRoi.EndColor = System.Windows.Media.Color.FromRgb(0x1E, 0x5B, 0x53);
-            }
-            UpdateDrawingDetails();
-        }
-        private Rectangle GetHandle(Rectangle drawingRoi, int handleSize)
-        {
-            var bottomRight = new Point(drawingRoi.X + drawingRoi.Width, drawingRoi.Y + drawingRoi.Height);
-            Rectangle handle = new Rectangle(bottomRight.X - handleSize / 2, bottomRight.Y - handleSize / 2, handleSize, handleSize);
-         
-            return handle;
-        }
-        private void UpdateDrawingDetails()
-        {
-            if (_showingImage == null)
-                return;
-            _curHandle = GetHandle(CurDrawingRoi, 10);
-            using (Image<Bgr, byte> image = _showingImage.Copy())
-            {
-                if (_isSelectingRoi)
-                {
-                    if (_isMoving)
-                    {
-                        CvInvoke.Rectangle(image, CurDrawingRoi, new MCvScalar(0, 127, 255), 1);
-                    }
-                    else
-                    {
-                        CvInvoke.Rectangle(image, CurDrawingRoi, new MCvScalar(0, 0, 255), 1);
-                    }
-
-                    if (_isResizing)
-                    {
-                        CvInvoke.Rectangle(image, _curHandle, new MCvScalar(0, 127, 255), -1);
-                    }
-                    else
-                    {
-                        CvInvoke.Rectangle(image, _curHandle, new MCvScalar(0, 0, 255), -1);
-                    }
-                }
-                else
-                {
-                    CvInvoke.Rectangle(image, CurDrawingRoi, new MCvScalar(0, 255, 0), 1);
-                }
-
-                UpdateCameraImage(image.Bitmap);
-                if (CurDrawingRoi == Rectangle.Empty)
-                {
-                    _curTempImage = null;
-                    imbTemplate.Source = null;
-                }
-                else
-                {
-                    _curTempImage = _showingImage.Copy(CurDrawingRoi);
-                    imbTemplate.Source = Converter.BitmapToBitmapSource(_curTempImage.Bitmap);
-                }
-            }
+            btnAddRoi.StartColor = Color.FromRgb(0xCC, 0xFF, 0xAA);
+            btnAddRoi.EndColor = Color.FromRgb(0x1E, 0x5B, 0x53);
+            Cursor = Cursors.Arrow;
         }
 
         private void dgTemplatesList_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Delete)
-            {
-                if (TemplatesList.Count == 0) return;
+            if (e.Key != Key.Delete)
+                return;
 
-                var warining = new WarningWindow($"Are you sure to delete Template {SelectedTemplate.Id}?");
-                var res = warining.ShowDialog();
+            if (TemplatesList.Count == 0 || SelectedTemplate == null)
+                return;
 
-                if (res != true) return;
+            var warning = new WarningWindow(string.Format("Are you sure to delete Template {0}?", SelectedTemplate.Id));
+            bool? res = warning.ShowDialog();
+            if (res != true)
+                return;
 
+            TemplatesList.Remove(SelectedTemplate);
+            SelectedTemplate = null;
 
-                TemplatesList.Remove(SelectedTemplate);
-                SelectedTemplate = null;
+            for (int i = 0; i < TemplatesList.Count; i++)
+                TemplatesList[i].Id = i;
 
-                // Re-update index
-                for (int i = 0; i < TemplatesList.Count; i++)
-                {
-                    TemplatesList[i].Id = i;
-                }
-                CanSave = true;
-                OnPropertyChanged(nameof(CanSave));
-            }
+            CanSave = true;
+            OnPropertyChanged(nameof(CanSave));
         }
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (!_isSelectingRoi) return;
-
-
-            if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Right)
-            {
-                if (CurDrawingRoi.X + CurDrawingRoi.Width == _showingImage.Width) return;
-                CurDrawingRoi = new Rectangle(CurDrawingRoi.X, CurDrawingRoi.Y, CurDrawingRoi.Width + 1, CurDrawingRoi.Height);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-            }
-            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Left)
-            {
-                if (CurDrawingRoi.Width <= 1) return;
-                CurDrawingRoi = new Rectangle(CurDrawingRoi.X, CurDrawingRoi.Y, CurDrawingRoi.Width - 1, CurDrawingRoi.Height);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-            }
-            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Down)
-            {
-                if (CurDrawingRoi.Y + CurDrawingRoi.Height == _showingImage.Height) return;
-                CurDrawingRoi = new Rectangle(CurDrawingRoi.X, CurDrawingRoi.Y, CurDrawingRoi.Width, CurDrawingRoi.Height + 1);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-            }
-            else if (Keyboard.Modifiers == ModifierKeys.Control && e.Key == Key.Up)
-            {
-                if (CurDrawingRoi.Height <= 1) return;
-                CurDrawingRoi = new Rectangle(CurDrawingRoi.X, CurDrawingRoi.Y, CurDrawingRoi.Width, CurDrawingRoi.Height - 1);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-            }
-            else if (e.Key == Key.Left)
-            {
-                if (CurDrawingRoi.X == 0) return;
-                CurDrawingRoi = new Rectangle(CurDrawingRoi.X - 1, CurDrawingRoi.Y, CurDrawingRoi.Width, CurDrawingRoi.Height);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-            }
-            else if (e.Key == Key.Right)
-            {
-                if (CurDrawingRoi.X + CurDrawingRoi.Width == _showingImage.Width) return;
-                CurDrawingRoi = new Rectangle(CurDrawingRoi.X + 1, CurDrawingRoi.Y, CurDrawingRoi.Width, CurDrawingRoi.Height);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-            }
-            else if (e.Key == Key.Up)
-            {
-                if (CurDrawingRoi.Y == 0) return;
-                CurDrawingRoi = new Rectangle(CurDrawingRoi.X, CurDrawingRoi.Y - 1, CurDrawingRoi.Width, CurDrawingRoi.Height);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-            }
-            else if (e.Key == Key.Down)
-            {
-                if (CurDrawingRoi.Y + CurDrawingRoi.Height == _showingImage.Height) return;
-                CurDrawingRoi = new Rectangle(CurDrawingRoi.X, CurDrawingRoi.Y + 1, CurDrawingRoi.Width, CurDrawingRoi.Height);
-                OnPropertyChanged(nameof(CurDrawingRoi));
-            }
-            UpdateDrawingDetails();
+            // Phím tắt chính đã được DLL ImageViewer xử lý khi viewer đang focus:
+            // Arrow: move ROI
+            // Ctrl + Arrow: resize ROI
+            // Alt + Left/Right: rotate ROI
+            // Delete: delete ROI
+            // Esc: select mode
+            // Giữ hàm này để không lỗi XAML cũ.
         }
+    }
+
+    public class MasterRoiInfo
+    {
+        public double Cx { get; set; }
+        public double Cy { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double AngleDeg { get; set; }
+        public System.Windows.Point[] Points { get; set; }
     }
 }

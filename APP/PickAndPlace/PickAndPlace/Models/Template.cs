@@ -33,9 +33,13 @@ namespace PickAndPlace.Models
         [JsonIgnore]
         public Image<Bgr, byte> Image { get; set; }
         public string ImagePath { get; set; }
+        public double CenterX { get; set; }
+        public double CenterY { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double Angle { get; set; }
+
         public Template() { }
-
-
         public Template(int id, string imagePath)
         {
             Id = id;

@@ -342,27 +342,22 @@ namespace PickAndPlace.Views
             {
                 if (image == null)
                 {
-                    imbImage.Source = null;
+                    imbImage.ImageSource = null;
+                    imbImage.ClearShapes();
                 }
-                else if (imbImage.Source == null)
+                else if (imbImage.ImageSource == null)
                 {
-                    imbImage.SourceFromBitmap = image;
-                    var scale = GetFittedZoomScale(imbImage, image.Width, image.Height);
-                    imbImage.SetZoomScale(scale);
+
+                    BitmapSource source = Converter.BitmapToBitmapSource(image);
+                    imbImage.LoadImage(source);
+                    imbImage.FitToScreen();
                 }
                 else
                 {
-                    imbImage.SourceFromBitmap = image;
+                    BitmapSource source = Converter.BitmapToBitmapSource(image);
+                    imbImage.LoadImage(source);
                 }
             }));
-        }
-        private double GetFittedZoomScale(object imb, double imageWidth, double imageHeight)
-        {
-            var imageBox = imb as Heal.MyControl.ImageBox;
-            var imageBoxWidth = imageBox.ActualWidth;
-            var imageBoxHeight = imageBox.ActualHeight;
-            var scale = Math.Min(imageBoxWidth / imageWidth, imageBoxHeight / imageHeight);
-            return scale;
         }
         internal void UpdateCurrentShiftTime(string curShiftTime)
         {
@@ -447,23 +442,6 @@ namespace PickAndPlace.Views
             });
         }
 
-        private void imbImage_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (e.ClickCount == 2)
-            {
-                ResetView();
-            }
-        }
-
-        private void ResetView()
-        {
-            if (!object.ReferenceEquals(imbImage.Source, null))
-            {
-                var scaleMap = GetFittedZoomScale(imbImage, imbImage.Source.Width, imbImage.Source.Height);
-                imbImage.SetZoomScale(scaleMap);
-                imbImage.GoToXY(0, 0);
-            }
-        }
         public void UpdateCalculateResult(double score, double imageX, double imageY, double imageAngle, double robotX, double robotY, double robotW)
         {
             this.Dispatcher.Invoke(() =>

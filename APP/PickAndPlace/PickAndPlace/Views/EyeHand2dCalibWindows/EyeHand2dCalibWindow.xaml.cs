@@ -7,6 +7,7 @@ using PickAndPlace.Controllers.Camera;
 using PickAndPlace.Models;
 using PickAndPlace.Utils;
 using PickAndPlace.Views.UtilitiesWindows;
+using LincolnVision.ImageViewer;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -26,6 +27,8 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
 
 namespace PickAndPlace.Views.EyeHand2dCalibWindows
 {
@@ -48,7 +51,7 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
         public bool CalibFinished { get; set; } = false;
         public bool CanValidate { get; set; } = false;
         public bool CanRemove => PairPoints.Count > 0;
-        public bool CanCalib=> PairPoints.Count >= 4;
+        public bool CanCalib => PairPoints.Count >= 4;
         private PairPoint _selectedPairPoint;
 
         public PairPoint SelectedPairPoint
@@ -64,13 +67,19 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
             }
         }
 
-   
+
 
         CameraManager _cameraManager;
         LincolnCamera _cam;
         private bool _isSelecting;
         private bool _isValidating;
         private Image<Bgr, byte> _curImage;
+
+        // Overlay point markers drawn by LincolnVision.ImageViewer.
+        // Do not draw directly on _curImage, otherwise zoom/pan and overlay will be reset.
+        private VisionShape _selectedPointShape;
+        private VisionShape _validationPointShape;
+
         private DobotRobotClient _robot;
 
         public EyeHand2dCalibWindow()
@@ -97,6 +106,11 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
 
         private async void btnConnectCamera_MouseDown(object sender, MouseButtonEventArgs e)
         {
+            CameraConnected = true;
+            OnPropertyChanged(nameof(CameraConnected));
+            return;
+
+
             if (cbbCamSn.SelectedItem == null)
             {
                 var error = new ErrorWindow("Please choose a camera!\rHãy chọn camera!");
@@ -118,7 +132,7 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
                         return;
 
                     _cam = _cameraManager.GetCamera(camSn) as LincolnCamera;
-               
+
                     if (!_cam.IsOpen())
                         throw new Exception($"Cannot open camera {camSn}!");
 
@@ -138,31 +152,63 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
         {
             if (image == null)
             {
-                imbImage.Source = null;
+                imbImage.ImageSource = null;
+                imbImage.ClearShapes();
+                _selectedPointShape = null;
+                _validationPointShape = null;
+                return;
             }
-            else if (imbImage.Source == null)
+
+            BitmapSource source = Converter.BitmapToBitmapSource(image);
+            imbImage.LoadImage(source);
+        }
+
+        private void DrawOrUpdatePointMarker(ref VisionShape marker, double x, double y, Brush color, string name)
+        {
+            if (marker == null || !imbImage.Shapes.Contains(marker))
             {
-                imbImage.SourceFromBitmap = image;
-                var scale = GetFittedZoomScale(imbImage, image.Width, image.Height);
-                imbImage.SetZoomScale(scale);
+                marker = new VisionShape();
+                marker.Name = name;
+                marker.Kind = VisionShapeKind.Circle;
+                marker.Cx = x;
+                marker.Cy = y;
+                marker.Radius = 3;
+                marker.Stroke = color;
+                marker.Fill = color;
+                marker.StrokeThickness = 1.5;
+                imbImage.Shapes.Add(marker);
             }
             else
             {
-                imbImage.SourceFromBitmap = image;
+                marker.Cx = x;
+                marker.Cy = y;
+                marker.Radius = 3;
+                marker.Stroke = color;
+                marker.Fill = color;
             }
+
+            imbImage.InvalidateVisual();
         }
-        private double GetFittedZoomScale(object imb, double imageWidth, double imageHeight)
+
+        private void RemovePointMarker(ref VisionShape marker)
         {
-            var imageBox = imb as Heal.MyControl.ImageBox;
-            var imageBoxWidth = imageBox.ActualWidth;
-            var imageBoxHeight = imageBox.ActualHeight;
-            var scale = Math.Min(imageBoxWidth / imageWidth, imageBoxHeight / imageHeight);
-            return scale;
+            if (marker != null && imbImage.Shapes.Contains(marker))
+                imbImage.Shapes.Remove(marker);
+
+            marker = null;
+            imbImage.InvalidateVisual();
         }
+
+        private void ClearPointMarkers()
+        {
+            RemovePointMarker(ref _selectedPointShape);
+            RemovePointMarker(ref _validationPointShape);
+        }
+
         private void UpdatePixelCoord(double x, double y)
         {
             this.Dispatcher.Invoke(() =>
-            { 
+            {
                 tbImageX.Text = x.ToString("0.00");
                 tbImageY.Text = y.ToString("0.00");
             });
@@ -197,10 +243,12 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
         }
         private void btnCaptureImage_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            var bitmap = _cam.TriggerAndGetFrame();
-            //System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(@"D:\huynhvc\OTHERS\pick_and_place\APP\Image_20260307110740938.bmp");
+            //var bitmap = _cam.TriggerAndGetFrame();
+            System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(@"D:\huynhvc\OTHERS\pick_multi_pcb\Image_20260307110740938.bmp");
             _curImage = new Image<Bgr, byte>(bitmap);
             UpdateImage(bitmap);
+            ClearPointMarkers();
+            imbImage.CurrentTool = DrawingTool.Select;
             CanSelectPoint = true;
             OnPropertyChanged(nameof(CanSelectPoint));
         }
@@ -212,20 +260,24 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
 
         private void btnSelectPoint_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (_curImage == null) 
-            { 
+            if (_curImage == null)
+            {
                 var error = new ErrorWindow("Please capture an image!\rHãy chụp 1 ảnh camera!");
                 error.ShowDialog();
                 return;
             }
-        
+
+            // Switch off validation mode. Keep the selected point marker, remove validation marker.
             btnSelectValidPoint.StartColor = System.Windows.Media.Color.FromRgb(0xC8, 0xAA, 0xAA);
             btnSelectValidPoint.EndColor = System.Windows.Media.Color.FromRgb(0x1C, 0x4D, 0x8D);
             if (_isValidating)
             {
                 _isValidating = false;
-                UpdateImage(_curImage.Bitmap);
+                RemovePointMarker(ref _validationPointShape);
             }
+
+            imbImage.CurrentTool = DrawingTool.Select;
+
             if (!_isSelecting)
             {
                 imbImage.Cursor = Cursors.Cross;
@@ -239,7 +291,7 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
                 imbImage.Cursor = Cursors.Arrow;
                 Cursor = Cursors.Arrow;
                 btnSelectPoint.StartColor = System.Windows.Media.Color.FromRgb(0xC8, 0xAA, 0xAA);
-                btnSelectPoint.EndColor =  System.Windows.Media.Color.FromRgb(0x1C, 0x4D, 0x8D);
+                btnSelectPoint.EndColor = System.Windows.Media.Color.FromRgb(0x1C, 0x4D, 0x8D);
                 _isSelecting = false;
             }
         }
@@ -321,9 +373,8 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
                 tbImageY.Text = "";
                 tbRobotX.Text = "";
                 tbRobotY.Text = "";
-                if (_curImage == null)
-                    return;
-                UpdateImage(_curImage.Bitmap);
+
+                RemovePointMarker(ref _selectedPointShape);
             });
         }
 
@@ -331,7 +382,7 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
         {
             // Check varlid pair point
             if (tbImageX.Text == "" || tbImageY.Text == "" || tbRobotX.Text == "" || tbRobotY.Text == "")
-            { 
+            {
                 var error = new ErrorWindow("Please select/get a pair of pixel point and robot coordinate!\rHãy chọn 1 cặp pixel point với 1 robot coordinate!");
                 error.ShowDialog();
                 return;
@@ -399,7 +450,7 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
                     return;
             }
             var res = APICommunication.Calibration2D(_param.ApiUrlAi, PairPoints);
-            if (res!=null && res.Result)
+            if (res != null && res.Result)
             {
                 var info = new InformationWindow("Calibration successfully!\rCalibration thành công!");
                 info.ShowDialog();
@@ -424,53 +475,53 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
         {
             if (imbImage == null)
                 return;
-            if (e.ClickCount == 2)
-            {
-                ResetView();
-            }   
+
+            if (_curImage == null)
+                return;
 
             if (!_isSelecting && !_isValidating)
                 return;
 
-            var control = sender as Heal.MyControl.ImageBox;
-            System.Windows.Point p = Mouse.GetPosition(control);
-            double scale = control.ZoomScale;
-            double x = control.TranslateX;
-            double y = control.TranslateY;
-            var clickPosition = new System.Windows.Point(p.X / scale - x / scale, p.Y / scale - y / scale);
+            if (e.ChangedButton != MouseButton.Left)
+                return;
 
-            Console.WriteLine("X: " + clickPosition.X + " Y: " + clickPosition.Y);
+            // Stop the viewer from treating this click as ROI select/move while point-picking mode is active.
+            e.Handled = true;
+
+            System.Windows.Point screenPoint = e.GetPosition(imbImage);
+            System.Windows.Point clickPosition = imbImage.ScreenToImage(screenPoint);
+
+            if (clickPosition.X < 0 || clickPosition.Y < 0 ||
+                clickPosition.X >= _curImage.Width || clickPosition.Y >= _curImage.Height)
+            {
+                return;
+            }
+
+            Console.WriteLine("X: " + clickPosition.X.ToString("F3") + " Y: " + clickPosition.Y.ToString("F3"));
+
             if (_isSelecting)
             {
                 UpdatePixelCoord(clickPosition.X, clickPosition.Y);
-                using (var image = _curImage.Clone())
-                {
-                    CvInvoke.Circle(image, new System.Drawing.Point((int)clickPosition.X, (int)clickPosition.Y), 2, new MCvScalar(0, 0, 255), -1);
-                    UpdateImage(image.Bitmap);
-                }
+                DrawOrUpdatePointMarker(
+                    ref _selectedPointShape,
+                    clickPosition.X,
+                    clickPosition.Y,
+                    Brushes.Red,
+                    "Selected_Point");
             }
             else if (_isValidating)
             {
                 UpdateValidationPixelCoord(clickPosition.X, clickPosition.Y);
-                using (var image = _curImage.Clone())
-                {
-                    CvInvoke.Circle(image, new System.Drawing.Point((int)clickPosition.X, (int)clickPosition.Y), 2, new MCvScalar(0, 255, 0), -1);
-                    UpdateImage(image.Bitmap);
-                }
+                DrawOrUpdatePointMarker(
+                    ref _validationPointShape,
+                    clickPosition.X,
+                    clickPosition.Y,
+                    Brushes.Lime,
+                    "Validation_Point");
 
                 var res = APICommunication.TransformPoint(_param.ApiUrlAi, clickPosition.X, clickPosition.Y);
-                UpdateValidationRobotCoord((double)res.RobotX, (double)res.RobotY);
-
-            }
-        }
-
-        private void ResetView()
-        {
-            if (!object.ReferenceEquals(imbImage.Source, null))
-            {
-                var scaleMap = GetFittedZoomScale(imbImage, imbImage.Source.Width, imbImage.Source.Height);
-                imbImage.SetZoomScale(scaleMap);
-                imbImage.GoToXY(0, 0);
+                if (res != null)
+                    UpdateValidationRobotCoord((double)res.RobotX, (double)res.RobotY);
             }
         }
 
@@ -496,15 +547,15 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
                 error.ShowDialog();
                 return;
             }
-       
+            ClearPointMarkers();
             btnSelectPoint.StartColor = System.Windows.Media.Color.FromRgb(0xC8, 0xAA, 0xAA);
             btnSelectPoint.EndColor = System.Windows.Media.Color.FromRgb(0x1C, 0x4D, 0x8D);
-            UpdateImage(_curImage.Bitmap);
+
             if (_isSelecting)
-            {
                 _isSelecting = false;
-                UpdateImage(_curImage.Bitmap);
-            }
+
+            imbImage.CurrentTool = DrawingTool.Select;
+
             if (!_isValidating)
             {
                 imbImage.Cursor = Cursors.Cross;
@@ -584,7 +635,7 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
         private void btnLoadExistingMatrix_MouseDown(object sender, MouseButtonEventArgs e)
         {
             var res = APICommunication.LoadExistingMatrix(_param.ApiUrlAi);
-            if (res!=null && res.Result)
+            if (res != null && res.Result)
             {
                 var info = new InformationWindow("Load existing calibration result successfully!\rLoad kết quả calibration cũ thành công!");
                 info.ShowDialog();
@@ -650,139 +701,5 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
 
             return okX && okY;
         }
-        //private void GetDisplayedImageInfo(out double displayedW,
-        //                           out double displayedH,
-        //                           out double offsetX,
-        //                           out double offsetY)
-        //{
-        //    double imgW = imbImage.Source.Width;
-        //    double imgH = imbImage.Source.Height;
-
-        //    double controlW = imbImage.ActualWidth;
-        //    double controlH = imbImage.ActualHeight;
-
-        //    double ratio = Math.Min(controlW / imgW, controlH / imgH);
-
-        //    displayedW = imgW * ratio;
-        //    displayedH = imgH * ratio;
-
-        //    offsetX = (controlW - displayedW) / 2.0;
-        //    offsetY = (controlH - displayedH) / 2.0;
-        //}
-
-        //private void imbImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        //{
-        //    if (!_isSelecting)
-        //    {
-        //        imbImage.CaptureMouse();
-        //        _start = e.GetPosition(this);
-        //        _origin = new System.Windows.Point(translateTransform.X, translateTransform.Y);
-        //        Cursor = Cursors.Hand;
-        //    }
-
-        //    else
-        //    {
-        //        if (imbImage.Source == null) return;
-
-        //        Point mouse = e.GetPosition(overlayCanvas);
-
-        //        GetDisplayedImageInfo(out double displayedW,
-        //                              out double displayedH,
-        //                              out double offsetX,
-        //                              out double offsetY);
-
-        //        double x = mouse.X - offsetX;
-        //        double y = mouse.Y - offsetY;
-
-        //        if (x < 0 || y < 0 || x > displayedW || y > displayedH)
-        //            return;
-
-        //        double pixelX = x * imbImage.Source.Width / displayedW;
-        //        double pixelY = y * imbImage.Source.Height / displayedH;
-
-        //        Console.WriteLine($"({pixelX}, {pixelY})");
-
-        //        HighlightPoint(new Point(pixelX, pixelY));
-        //    }
-        //}
-
-        //private void HighlightPoint(System.Windows.Point pixelPoint)
-        //{
-        //    overlayCanvas.Children.Clear();
-
-        //    GetDisplayedImageInfo(out double displayedW,
-        //                          out double displayedH,
-        //                          out double offsetX,
-        //                          out double offsetY);
-
-        //    double uiX = pixelPoint.X * displayedW / imbImage.Source.Width + offsetX;
-        //    double uiY = pixelPoint.Y * displayedH / imbImage.Source.Height + offsetY;
-
-        //    Ellipse dot = new Ellipse()
-        //    {
-        //        Width = 10,
-        //        Height = 10,
-        //        Fill = Brushes.Red
-        //    };
-
-        //    Canvas.SetLeft(dot, uiX - 5);
-        //    Canvas.SetTop(dot, uiY - 5);
-
-        //    overlayCanvas.Children.Add(dot);
-        //}
-
-        //private void imbImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
-        //{
-        //    if (!_isSelecting)
-        //    {
-        //        imbImage.ReleaseMouseCapture();
-        //        Cursor = Cursors.Arrow;
-        //    }
-
-        //}
-
-        //private void imbImage_MouseMove(object sender, MouseEventArgs e)
-        //{
-        //    if (!imbImage.IsMouseCaptured) return;
-
-        //    System.Windows.Point p = e.GetPosition(this);
-        //    translateTransform.X = _origin.X + (p.X - _start.X);
-        //    translateTransform.Y = _origin.Y + (p.Y - _start.Y);
-        //}
-
-        //private void imbImage_MouseDown(object sender, MouseButtonEventArgs e)
-        //{
-        //    if (e.ClickCount == 2)
-        //        ResetView();
-        //}
-        //private void imbImage_MouseWheel(object sender, MouseWheelEventArgs e)
-        //{
-        //    double zoom = e.Delta > 0 ? 1.1 : 0.9;
-
-        //    scaleTransform.ScaleX *= zoom;
-        //    scaleTransform.ScaleY *= zoom;
-        //}
-        //private async void ResetView()
-        //{
-        //    var duration = TimeSpan.FromMilliseconds(150);
-
-        //    scaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1, duration));
-        //    scaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1, duration));
-        //    translateTransform.BeginAnimation(TranslateTransform.XProperty, new DoubleAnimation(0, duration));
-        //    translateTransform.BeginAnimation(TranslateTransform.YProperty, new DoubleAnimation(0, duration));
-
-        //    await Task.Delay(duration);
-
-        //    // Xóa animation, trả quyền điều khiển về code
-        //    scaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, null);
-        //    scaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, null);
-        //    translateTransform.BeginAnimation(TranslateTransform.XProperty, null);
-        //    translateTransform.BeginAnimation(TranslateTransform.YProperty, null);
-
-        //    scaleTransform.ScaleX = 1;
-        //    scaleTransform.ScaleY = 1;
-        //    translateTransform.X = 0;
-        //    translateTransform.Y = 0;
-        //}
     }
 }
