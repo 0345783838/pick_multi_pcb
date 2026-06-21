@@ -41,386 +41,418 @@
             </GroupBox>
         </Grid>
         <Grid Grid.Column="2">
-            <TabControl Background="#EEEEEE">
-                <TabItem
-                    Name="tabSetup"
-                    Background="#EEEEEE"
-                    Header="Setup">
-                    <Grid>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="127" />
-                            <RowDefinition Height="285" />
-                            <RowDefinition />
-                            <RowDefinition Height="70" />
-                        </Grid.RowDefinitions>
-                        <Grid Grid.Row="0">
-                            <GroupBox
-                                Margin="5"
-                                BorderBrush="Gray"
-                                BorderThickness="1"
-                                Header="Camera">
-                                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                    <StackPanel VerticalAlignment="Center">
-                                        <ComboBox
-                                            x:Name="cbbCamSn"
-                                            Width="100"
-                                            Height="30"
-                                            Margin="5,0,0,0"
-                                            HorizontalContentAlignment="Center"
-                                            VerticalContentAlignment="Center"
-                                            FontSize="15" />
-                                        <uc:CustomButton2
-                                            x:Name="btnConnectCamera"
-                                            Title="Connect&#x0A;Camera"
-                                            Width="100"
-                                            Height="50"
-                                            Margin="10,5,5,5"
-                                            EndColor="#b6c0c5"
-                                            FontSize="12"
-                                            IconHeight="27"
-                                            IconWidth="30"
-                                            IsEnabled="{Binding CanFinish}"
-                                            LeftIcon="/Resources/Icons/camera-connect.png"
-                                            MouseDown="btnConnectCamera_MouseDown"
-                                            StartColor="#18a5a7" />
-                                    </StackPanel>
-                                    <Border
-                                        Width="1"
-                                        Margin="20,5,0,5"
-                                        Background="DarkGray" />
-                                    <uc:CustomButton
-                                        x:Name="btnCaptureImage"
-                                        Title="Capture"
-                                        Width="180"
-                                        Height="80"
-                                        Margin="15,5,5,5"
-                                        EndColor="#57370D"
-                                        IconHeight="60"
-                                        IconWidth="60"
-                                        IsEnabled="{Binding CameraConnected}"
-                                        LeftIcon="/Resources/Icons/capture-image.png"
-                                        MouseDown="btnCaptureImage_MouseDown"
-                                        StartColor="#ffe998"
-                                        Value="IMAGE" />
 
-                                </StackPanel>
-                            </GroupBox>
-                        </Grid>
-                        <Grid Grid.Row="1">
-                            <GroupBox
-                                Margin="5"
-                                BorderBrush="Gray"
-                                BorderThickness="1"
-                                Header="Master Point Setting">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="127" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0">
+                    <GroupBox
+                            Margin="5"
+                            BorderBrush="Gray"
+                            BorderThickness="1"
+                            Header="Camera">
+                        <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                            <StackPanel VerticalAlignment="Center">
+                                <ComboBox
+                                        x:Name="cbbCamSn"
+                                        Width="100"
+                                        Height="30"
+                                        Margin="5,0,0,0"
+                                        HorizontalContentAlignment="Center"
+                                        VerticalContentAlignment="Center"
+                                        FontSize="15" />
+                                <uc:CustomButton2
+                                        x:Name="btnConnectCamera"
+                                        Title="Connect&#x0A;Camera"
+                                        Width="100"
+                                        Height="50"
+                                        Margin="10,5,5,5"
+                                        EndColor="#b6c0c5"
+                                        FontSize="12"
+                                        IconHeight="27"
+                                        IconWidth="30"
+                                        IsEnabled="{Binding CanFinish}"
+                                        LeftIcon="/Resources/Icons/camera-connect.png"
+                                        MouseDown="btnConnectCamera_MouseDown"
+                                        StartColor="#18a5a7" />
+                            </StackPanel>
+                            <Border
+                                    Width="1"
+                                    Margin="20,5,0,5"
+                                    Background="DarkGray" />
+                            <uc:CustomButton
+                                    x:Name="btnCaptureImage"
+                                    Title="Capture"
+                                    Width="180"
+                                    Height="80"
+                                    Margin="15,5,5,5"
+                                    EndColor="#57370D"
+                                    IconHeight="60"
+                                    IconWidth="60"
+                                    IsEnabled="{Binding CameraConnected}"
+                                    LeftIcon="/Resources/Icons/capture-image.png"
+                                    MouseDown="btnCaptureImage_MouseDown"
+                                    StartColor="#ffe998"
+                                    Value="IMAGE" />
+
+                        </StackPanel>
+                    </GroupBox>
+                </Grid>
+                <Grid Grid.Row="1">
+                    <Grid>
+                        <TabControl Background="#EEEEEE">
+                            <TabItem
+                                Name="tabSetup"
+                                Background="#EEEEEE"
+                                Header="Setup Master">
                                 <Grid>
                                     <Grid.RowDefinitions>
-                                        <RowDefinition Height="76*" />
-                                        <RowDefinition Height="107*" />
-                                        <RowDefinition Height="70*" />
+                                        <RowDefinition Height="285" />
+                                        <RowDefinition />
+                                        <RowDefinition Height="70" />
                                     </Grid.RowDefinitions>
                                     <Grid Grid.Row="0">
-                                        <StackPanel
-                                            Margin="0,0,0,0"
+                                        <GroupBox
+                        Margin="5"
+                        BorderBrush="Gray"
+                        BorderThickness="1"
+                        Header="Master Point Setting">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="76*" />
+                                                    <RowDefinition Height="107*" />
+                                                    <RowDefinition Height="70*" />
+                                                </Grid.RowDefinitions>
+                                                <Grid Grid.Row="0">
+                                                    <StackPanel
+                                    Margin="0,0,0,0"
+                                    HorizontalAlignment="Center"
+                                    Orientation="Horizontal">
+                                                        <uc:CustomButton2
+                                        x:Name="btnAddRoi"
+                                        Title="Create&#x0A;RoI"
+                                        Width="100"
+                                        Height="50"
+                                        Margin="0,0,0,0"
+                                        EndColor="#1e5b53"
+                                        FontSize="12"
+                                        IconHeight="40"
+                                        IconWidth="35"
+                                        IsEnabled="{Binding CanProcesImage}"
+                                        LeftIcon="/Resources/Icons/pencil_draw.png"
+                                        MouseDown="btnAddRoi_MouseDown"
+                                        StartColor="#ccffaa" />
+                                                        <uc:CustomButton2
+                                        x:Name="btnRemoveRoi"
+                                        Title="Remove&#x0A;RoI"
+                                        Width="100"
+                                        Height="50"
+                                        Margin="15,5,5,5"
+                                        EndColor="#F07470 "
+                                        FontSize="12"
+                                        IconHeight="35"
+                                        IconWidth="30"
+                                        IsEnabled="{Binding CanAddRemove}"
+                                        LeftIcon="/Resources/Icons/clear.png"
+                                        MouseDown="btnRemoveRoi_MouseDown"
+                                        StartColor="#F6BDC0" />
+                                                    </StackPanel>
+                                                </Grid>
+                                                <Grid Grid.Row="1" Margin="0,0,0,0">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="191*" />
+                                                        <ColumnDefinition Width="10" />
+                                                        <ColumnDefinition Width="127*" />
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid Grid.Column="0" Margin="0,-20,0,0">
+                                                        <StackPanel VerticalAlignment="Center" Orientation="Vertical">
+                                                            <StackPanel
+                                            Margin="5,0,0,0"
                                             HorizontalAlignment="Center"
                                             Orientation="Horizontal">
-                                            <uc:CustomButton2
-                                                x:Name="btnAddRoi"
-                                                Title="Create&#x0A;RoI"
-                                                Width="100"
-                                                Height="50"
-                                                Margin="0,0,0,0"
-                                                EndColor="#1e5b53"
-                                                FontSize="12"
-                                                IconHeight="40"
-                                                IconWidth="35"
-                                                IsEnabled="{Binding CanProcesImage}"
-                                                LeftIcon="/Resources/Icons/pencil_draw.png"
-                                                MouseDown="btnAddRoi_MouseDown"
-                                                StartColor="#ccffaa" />
-                                            <uc:CustomButton2
-                                                x:Name="btnRemoveRoi"
-                                                Title="Remove&#x0A;RoI"
-                                                Width="100"
-                                                Height="50"
-                                                Margin="15,5,5,5"
-                                                EndColor="#F07470 "
-                                                FontSize="12"
-                                                IconHeight="35"
-                                                IconWidth="30"
-                                                IsEnabled="{Binding CanAddRemove}"
-                                                LeftIcon="/Resources/Icons/clear.png"
-                                                MouseDown="btnRemoveRoi_MouseDown"
-                                                StartColor="#F6BDC0" />
-                                        </StackPanel>
-                                    </Grid>
-                                    <Grid Grid.Row="1" Margin="0,0,0,0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="191*" />
-                                            <ColumnDefinition Width="10" />
-                                            <ColumnDefinition Width="127*" />
-                                        </Grid.ColumnDefinitions>
-                                        <Grid Grid.Column="0" Margin="0,-20,0,0">
-                                            <StackPanel VerticalAlignment="Center" Orientation="Vertical">
-                                                <StackPanel
-                                                    Margin="5,0,0,0"
-                                                    HorizontalAlignment="Center"
-                                                    Orientation="Horizontal">
-                                                    <StackPanel Margin="0,0,5,0" VerticalAlignment="Center">
-                                                        <Label
-                                                            Margin="0,0,0,0"
-                                                            HorizontalAlignment="Center"
-                                                            VerticalAlignment="Center"
-                                                            Content="Cx"
-                                                            FontSize="12" />
-                                                        <TextBox
-                                                            Name="tbRoiX"
-                                                            Width="65"
-                                                            Height="25"
-                                                            Margin="5,-5,0,0"
-                                                            HorizontalContentAlignment="Center"
-                                                            VerticalContentAlignment="Center"
-                                                            Background="Gainsboro"
-                                                            BorderBrush="DarkGray"
-                                                            FontSize="14"
-                                                            FontWeight="Bold"
-                                                            IsReadOnly="True"
-                                                            Text="{Binding RoiCx, StringFormat=F3}" />
-                                                    </StackPanel>
-                                                    <StackPanel Margin="0,0,5,0" VerticalAlignment="Center">
-                                                        <Label
-                                                            Margin="0,0,0,0"
-                                                            HorizontalAlignment="Center"
-                                                            VerticalAlignment="Center"
-                                                            Content="Cy"
-                                                            FontSize="12" />
-                                                        <TextBox
-                                                            Name="tbRoiY"
-                                                            Width="65"
-                                                            Height="25"
-                                                            Margin="5,-5,0,0"
-                                                            HorizontalContentAlignment="Center"
-                                                            VerticalContentAlignment="Center"
-                                                            Background="Gainsboro"
-                                                            BorderBrush="DarkGray"
-                                                            FontSize="14"
-                                                            FontWeight="Bold"
-                                                            IsReadOnly="True"
-                                                            Text="{Binding RoiCy, StringFormat=F3}" />
-                                                    </StackPanel>
-                                                </StackPanel>
-                                                <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
-                                                    <StackPanel Margin="0,0,5,0" VerticalAlignment="Center">
-                                                        <Label
-                                                            Margin="0,0,0,0"
-                                                            HorizontalAlignment="Center"
-                                                            VerticalAlignment="Center"
-                                                            Content="Width"
-                                                            FontSize="12" />
-                                                        <TextBox
-                                                            Name="tbRoiW"
-                                                            Width="65"
-                                                            Height="25"
-                                                            Margin="5,-5,0,0"
-                                                            HorizontalContentAlignment="Center"
-                                                            VerticalContentAlignment="Center"
-                                                            Background="Gainsboro"
-                                                            BorderBrush="DarkGray"
-                                                            FontSize="14"
-                                                            FontWeight="Bold"
-                                                            IsReadOnly="True"
-                                                            Text="{Binding RoiWidth, StringFormat=F3}" />
-                                                    </StackPanel>
-                                                    <StackPanel Margin="0,0,0,0" VerticalAlignment="Center">
-                                                        <Label
-                                                            Margin="0,0,0,0"
-                                                            HorizontalAlignment="Center"
-                                                            VerticalAlignment="Center"
-                                                            Content="Height"
-                                                            FontSize="12" />
-                                                        <TextBox
-                                                            Name="tbRoiH"
-                                                            Width="65"
-                                                            Height="25"
-                                                            Margin="5,-5,0,0"
-                                                            HorizontalContentAlignment="Center"
-                                                            VerticalContentAlignment="Center"
-                                                            Background="Gainsboro"
-                                                            BorderBrush="DarkGray"
-                                                            FontSize="14"
-                                                            FontWeight="Bold"
-                                                            IsReadOnly="True"
-                                                            Text="{Binding RoiHeight, StringFormat=F3}" />
-                                                    </StackPanel>
-                                                </StackPanel>
-                                            </StackPanel>
-                                        </Grid>
-                                        <Grid Grid.Column="1">
-                                            <Border
-                                                Width="1"
-                                                Margin="0,25,0,25"
-                                                Background="DarkGray" />
-                                        </Grid>
-                                        <Grid Grid.Column="2" Margin="0,-20,0,0">
-                                            <StackPanel
-                                                Margin="0,0,0,0"
-                                                HorizontalAlignment="Center"
-                                                VerticalAlignment="Center"
-                                                Orientation="Vertical">
-                                                <Label
+                                                                <StackPanel Margin="0,0,5,0" VerticalAlignment="Center">
+                                                                    <Label
                                                     Margin="0,0,0,0"
                                                     HorizontalAlignment="Center"
                                                     VerticalAlignment="Center"
-                                                    Content="ROI Angle "
-                                                    FontSize="12"
-                                                    Foreground="{Binding CanProcesImage, Converter={StaticResource LabelColorConverter}}" />
-                                                <xctk:DoubleUpDown
-                                                    Name="udtbAngle"
-                                                    Width="70"
-                                                    Height="35"
-                                                    Margin="0,-5,0,0"
-                                                    FontSize="16"
-                                                    FormatString="F1"
-                                                    Increment="0.1"
-                                                    IsEnabled="{Binding CanProcesImage}"
-                                                    Maximum="360"
-                                                    Minimum="-360"
-                                                    PreviewTextInput="udtbAngle_PreviewTextInput"
-                                                    ValueChanged="udtbAngle_ValueChanged"
-                                                    Value="0" />
-                                            </StackPanel>
-                                        </Grid>
-                                    </Grid>
-                                    <Grid
-                                        Grid.Row="1"
-                                        Grid.RowSpan="2"
-                                        Margin="0,87,0,0">
-                                        <uc:CustomButton2
-                                            x:Name="btnAddTemplate"
-                                            Title="Add&#x0A;Template"
-                                            Width="115"
-                                            Height="50"
+                                                    Content="Cx"
+                                                    FontSize="12" />
+                                                                    <TextBox
+                                                    Name="tbRoiX"
+                                                    Width="65"
+                                                    Height="25"
+                                                    Margin="5,-5,0,0"
+                                                    HorizontalContentAlignment="Center"
+                                                    VerticalContentAlignment="Center"
+                                                    Background="Gainsboro"
+                                                    BorderBrush="DarkGray"
+                                                    FontSize="14"
+                                                    FontWeight="Bold"
+                                                    IsReadOnly="True"
+                                                    Text="{Binding RoiCx, StringFormat=F3}" />
+                                                                </StackPanel>
+                                                                <StackPanel Margin="0,0,5,0" VerticalAlignment="Center">
+                                                                    <Label
+                                                    Margin="0,0,0,0"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Content="Cy"
+                                                    FontSize="12" />
+                                                                    <TextBox
+                                                    Name="tbRoiY"
+                                                    Width="65"
+                                                    Height="25"
+                                                    Margin="5,-5,0,0"
+                                                    HorizontalContentAlignment="Center"
+                                                    VerticalContentAlignment="Center"
+                                                    Background="Gainsboro"
+                                                    BorderBrush="DarkGray"
+                                                    FontSize="14"
+                                                    FontWeight="Bold"
+                                                    IsReadOnly="True"
+                                                    Text="{Binding RoiCy, StringFormat=F3}" />
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                            <StackPanel HorizontalAlignment="Center" Orientation="Horizontal">
+                                                                <StackPanel Margin="0,0,5,0" VerticalAlignment="Center">
+                                                                    <Label
+                                                    Margin="0,0,0,0"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Content="Width"
+                                                    FontSize="12" />
+                                                                    <TextBox
+                                                    Name="tbRoiW"
+                                                    Width="65"
+                                                    Height="25"
+                                                    Margin="5,-5,0,0"
+                                                    HorizontalContentAlignment="Center"
+                                                    VerticalContentAlignment="Center"
+                                                    Background="Gainsboro"
+                                                    BorderBrush="DarkGray"
+                                                    FontSize="14"
+                                                    FontWeight="Bold"
+                                                    IsReadOnly="True"
+                                                    Text="{Binding RoiWidth, StringFormat=F3}" />
+                                                                </StackPanel>
+                                                                <StackPanel Margin="0,0,0,0" VerticalAlignment="Center">
+                                                                    <Label
+                                                    Margin="0,0,0,0"
+                                                    HorizontalAlignment="Center"
+                                                    VerticalAlignment="Center"
+                                                    Content="Height"
+                                                    FontSize="12" />
+                                                                    <TextBox
+                                                    Name="tbRoiH"
+                                                    Width="65"
+                                                    Height="25"
+                                                    Margin="5,-5,0,0"
+                                                    HorizontalContentAlignment="Center"
+                                                    VerticalContentAlignment="Center"
+                                                    Background="Gainsboro"
+                                                    BorderBrush="DarkGray"
+                                                    FontSize="14"
+                                                    FontWeight="Bold"
+                                                    IsReadOnly="True"
+                                                    Text="{Binding RoiHeight, StringFormat=F3}" />
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <Grid Grid.Column="1">
+                                                        <Border
+                                        Width="1"
+                                        Margin="0,25,0,25"
+                                        Background="DarkGray" />
+                                                    </Grid>
+                                                    <Grid Grid.Column="2" Margin="0,-20,0,0">
+                                                        <StackPanel
+                                        Margin="0,0,0,0"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Orientation="Vertical">
+                                                            <Label
                                             Margin="0,0,0,0"
-                                            EndColor="#87BAC3"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center"
+                                            Content="ROI Angle "
                                             FontSize="12"
-                                            IconHeight="40"
-                                            IconWidth="35"
-                                            IsEnabled="{Binding CanAddRemove}"
-                                            LeftIcon="/Resources/Icons/add.png"
-                                            MouseDown="btnAddTemplate_MouseDown"
-                                            StartColor="#AED6CF" />
-                                    </Grid>
-                                </Grid>
-                            </GroupBox>
-                        </Grid>
-                        <Grid Grid.Row="2">
-                            <GroupBox
-                                Margin="5"
-                                BorderBrush="Gray"
-                                BorderThickness="1"
-                                Header="Templates Manager">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="1*" />
-                                        <RowDefinition Height="120" />
-                                    </Grid.RowDefinitions>
-                                    <Grid Grid.Row="0">
-                                        <Border Margin="15,5,15,5" Background="DarkGray" />
-                                    </Grid>
-                                    <Grid Grid.Row="1">
-                                        <DataGrid
-                                            Name="dgTemplatesList"
-                                            Margin="10,5,10,5"
-                                            AlternationCount="15000"
-                                            AutoGenerateColumns="False"
-                                            EnableColumnVirtualization="True"
-                                            EnableRowVirtualization="True"
-                                            IsReadOnly="True"
-                                            ItemsSource="{Binding TemplatesList}"
-                                            PreviewKeyDown="dgTemplatesList_PreviewKeyDown"
-                                            RowHeight="35"
-                                            SelectedItem="{Binding SelectedTemplate}"
-                                            SelectionMode="Single"
-                                            VirtualizingPanel.IsVirtualizing="True">
-                                            <DataGrid.ColumnHeaderStyle>
-                                                <Style TargetType="DataGridColumnHeader">
-                                                    <Setter Property="HorizontalContentAlignment" Value="Center" />
-                                                    <Setter Property="VerticalContentAlignment" Value="Center" />
-                                                    <Setter Property="FontWeight" Value="Bold" />
-                                                </Style>
-                                            </DataGrid.ColumnHeaderStyle>
-                                            <DataGrid.Columns>
-                                                <!--  Cột số thứ tự  -->
-                                                <DataGridTemplateColumn Width="30" Header="ID">
-                                                    <DataGridTemplateColumn.CellTemplate>
-                                                        <DataTemplate>
-                                                            <TextBlock
-                                                                HorizontalAlignment="Center"
-                                                                VerticalAlignment="Center"
-                                                                Text="{Binding Id}" />
-                                                        </DataTemplate>
-                                                    </DataGridTemplateColumn.CellTemplate>
-                                                </DataGridTemplateColumn>
-
-                                                <!--  Cột đường dẫn ảnh  -->
-                                                <DataGridTemplateColumn Width="*" Header="Template Name">
-                                                    <DataGridTemplateColumn.CellTemplate>
-                                                        <DataTemplate>
-                                                            <TextBlock
-                                                                HorizontalAlignment="Center"
-                                                                VerticalAlignment="Center"
-                                                                Text="{Binding ImagePath, Converter={StaticResource FileNameConverterMain}}"
-                                                                TextAlignment="Center" />
-                                                        </DataTemplate>
-                                                    </DataGridTemplateColumn.CellTemplate>
-                                                </DataGridTemplateColumn>
-                                            </DataGrid.Columns>
-                                        </DataGrid>
-                                    </Grid>
-                                </Grid>
-                            </GroupBox>
-                        </Grid>
-                        <Grid Grid.Row="3">
-                            <StackPanel
-                                Margin="0,0,15,0"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                Orientation="Horizontal">
-                                <uc:CustomButton2
-                                    x:Name="btnCancel"
-                                    Title="Cancel&#x0A;Process"
-                                    Width="105"
-                                    Height="50"
-                                    Margin="0,0,10,0"
-                                    EndColor="#EEB87D"
-                                    FontSize="12"
-                                    IconHeight="35"
-                                    IconWidth="30"
-                                    LeftIcon="/Resources/Icons/delete.png"
-                                    MouseDown="btnCancel_MouseDown"
-                                    StartColor="#EE9B57" />
-                                <uc:CustomButton2
-                                    x:Name="btnSave"
-                                    Title="Save&#x0A;Settings"
-                                    Width="105"
+                                            Foreground="{Binding CanProcesImage, Converter={StaticResource LabelColorConverter}}" />
+                                                            <xctk:DoubleUpDown
+                                            Name="udtbAngle"
+                                            Width="70"
+                                            Height="35"
+                                            Margin="0,-5,0,0"
+                                            FontSize="16"
+                                            FormatString="F1"
+                                            Increment="0.1"
+                                            IsEnabled="{Binding CanProcesImage}"
+                                            Maximum="360"
+                                            Minimum="-360"
+                                            PreviewTextInput="udtbAngle_PreviewTextInput"
+                                            ValueChanged="udtbAngle_ValueChanged"
+                                            Value="0" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Grid>
+                                                <Grid
+                                Grid.Row="1"
+                                Grid.RowSpan="2"
+                                Margin="0,87,0,0">
+                                                    <uc:CustomButton2
+                                    x:Name="btnAddTemplate"
+                                    Title="Add&#x0A;Template"
+                                    Width="115"
                                     Height="50"
                                     Margin="0,0,0,0"
-                                    EndColor="#1e5b53"
+                                    EndColor="#87BAC3"
                                     FontSize="12"
                                     IconHeight="40"
                                     IconWidth="35"
-                                    IsEnabled="{Binding CanSave}"
-                                    LeftIcon="/Resources/Icons/save-2.png"
-                                    MouseDown="btnSave_MouseDown"
-                                    StartColor="#45cde9" />
-                            </StackPanel>
-                        </Grid>
+                                    IsEnabled="{Binding CanAddRemove}"
+                                    LeftIcon="/Resources/Icons/add.png"
+                                    MouseDown="btnAddTemplate_MouseDown"
+                                    StartColor="#AED6CF" />
+                                                </Grid>
+                                            </Grid>
+                                        </GroupBox>
+                                    </Grid>
+                                    <Grid Grid.Row="1">
+                                        <GroupBox
+                        Margin="5"
+                        BorderBrush="Gray"
+                        BorderThickness="1"
+                        Header="Templates Manager">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="1*" />
+                                                    <RowDefinition Height="120" />
+                                                </Grid.RowDefinitions>
+                                                <Grid Grid.Row="0">
+                                                    <Border Margin="15,5,15,5" Background="DarkGray" >
+                                                        <Image x:Name="imbTemplate" Stretch="Uniform" />
+                                                    </Border>
+                                                </Grid>
+                                                <Grid Grid.Row="1">
+                                                    <DataGrid
+                                    Name="dgTemplatesList"
+                                    Margin="10,5,10,5"
+                                    AlternationCount="15000"
+                                    AutoGenerateColumns="False"
+                                    EnableColumnVirtualization="True"
+                                    EnableRowVirtualization="True"
+                                    IsReadOnly="True"
+                                    ItemsSource="{Binding TemplatesList}"
+                                    PreviewKeyDown="dgTemplatesList_PreviewKeyDown"
+                                    RowHeight="35"
+                                    SelectedItem="{Binding SelectedTemplate}"
+                                    SelectionMode="Single"
+                                    VirtualizingPanel.IsVirtualizing="True">
+                                                        <DataGrid.ColumnHeaderStyle>
+                                                            <Style TargetType="DataGridColumnHeader">
+                                                                <Setter Property="HorizontalContentAlignment" Value="Center" />
+                                                                <Setter Property="VerticalContentAlignment" Value="Center" />
+                                                                <Setter Property="FontWeight" Value="Bold" />
+                                                            </Style>
+                                                        </DataGrid.ColumnHeaderStyle>
+                                                        <DataGrid.Columns>
+                                                            <!--  Cột số thứ tự  -->
+                                                            <DataGridTemplateColumn Width="30" Header="ID">
+                                                                <DataGridTemplateColumn.CellTemplate>
+                                                                    <DataTemplate>
+                                                                        <TextBlock
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Text="{Binding Id}" />
+                                                                    </DataTemplate>
+                                                                </DataGridTemplateColumn.CellTemplate>
+                                                            </DataGridTemplateColumn>
+
+                                                            <!--  Cột đường dẫn ảnh  -->
+                                                            <DataGridTemplateColumn Width="*" Header="Template Name">
+                                                                <DataGridTemplateColumn.CellTemplate>
+                                                                    <DataTemplate>
+                                                                        <TextBlock
+                                                        HorizontalAlignment="Center"
+                                                        VerticalAlignment="Center"
+                                                        Text="{Binding ImagePath, Converter={StaticResource FileNameConverterMain}}"
+                                                        TextAlignment="Center" />
+                                                                    </DataTemplate>
+                                                                </DataGridTemplateColumn.CellTemplate>
+                                                            </DataGridTemplateColumn>
+                                                        </DataGrid.Columns>
+                                                    </DataGrid>
+                                                </Grid>
+                                            </Grid>
+                                        </GroupBox>
+                                    </Grid>
+                                    <Grid Grid.Row="2">
+                                        <StackPanel
+                        Margin="0,0,15,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Orientation="Horizontal">
+                                            <uc:CustomButton2
+                            x:Name="btnCancel"
+                            Title="Cancel&#x0A;Process"
+                            Width="105"
+                            Height="50"
+                            Margin="0,0,10,0"
+                            EndColor="#EEB87D"
+                            FontSize="12"
+                            IconHeight="35"
+                            IconWidth="30"
+                            LeftIcon="/Resources/Icons/delete.png"
+                            MouseDown="btnCancel_MouseDown"
+                            StartColor="#EE9B57" />
+                                            <uc:CustomButton2
+                            x:Name="btnSave"
+                            Title="Save&#x0A;Settings"
+                            Width="105"
+                            Height="50"
+                            Margin="0,0,0,0"
+                            EndColor="#1e5b53"
+                            FontSize="12"
+                            IconHeight="40"
+                            IconWidth="35"
+                            IsEnabled="{Binding CanSave}"
+                            LeftIcon="/Resources/Icons/save-2.png"
+                            MouseDown="btnSave_MouseDown"
+                            StartColor="#45cde9" />
+                                        </StackPanel>
+                                    </Grid>
+                                </Grid>
+                            </TabItem>
+
+                            <TabItem
+                                Name="TabTest"
+                                Background="#EEEEEE"
+                                Header="Test Master">
+                                <DockPanel  LastChildFill="False">
+                                    <uc:CustomButton
+                                       x:Name="btnTest"
+                                       DockPanel.Dock="Top"
+                                       Title="Test"
+                                       Width="180"
+                                       Height="80"
+                                       Margin="15,5,5,5"
+                                       EndColor="#57370D"
+                                       IconHeight="60"
+                                       IconWidth="60"
+                                       IsEnabled="{Binding CameraConnected}"
+                                       LeftIcon="/Resources/Icons/capture-image.png"
+                                       MouseDown="btnTest_MouseDown"
+                                       StartColor="#ffe998"
+                                       Value="OFFSET" />
+                                </DockPanel>
+                            </TabItem>
+
+                        </TabControl>
                     </Grid>
-                </TabItem>
-                <TabItem
-                    Name="tabTest"
-                    Background="#EEEEEE"
-                    Header="Test" />
-            </TabControl>
+                </Grid>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

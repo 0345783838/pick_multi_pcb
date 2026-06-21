@@ -1,223 +1,448 @@
 import math
-import time
 import cv2
 import numpy as np
+import base64
+import json
+import ast
+
 from src.dtos.meta import DataResponse, ErrorCode
 from src.service.base_service import BaseService
-import base64
-import ast
 
 
 class CalculateRobotCoordService(BaseService):
     def __init__(self):
         super().__init__()
-        self.templates = []
-        pass
 
-    def update_templates(self, templates):
         self.templates = []
+        self.offsets = []
+
+        # Độ dài vector phụ trên ảnh để suy ra hướng/góc robot.
+        # Không liên quan đơn vị robot, chỉ cần đủ dài để tránh nhiễu.
+        self.direction_length_pixel = 100.0
+
+    # ==========================================================
+    # LOAD TEMPLATE
+    # ==========================================================
+
+    def update_templates(self, templates, offsets):
+        self.templates = []
+        self.offsets = []
+
+        if templates is None or len(templates) == 0:
+            return DataResponse(Result=False, Message="Template list is empty")
+
+        if offsets is None or len(offsets) != len(templates):
+            return DataResponse(Result=False, Message="Offset list invalid or not matching templates")
+
         for template in templates:
-            gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+            if template is None:
+                continue
+
+            if len(template.shape) == 3:
+                gray = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+            else:
+                gray = template.copy()
+
             self.templates.append(gray)
 
-        return DataResponse(Result=True, Message='Load Templates Successfully!')
+        for offset in offsets:
+            self.offsets.append(offset)
+
+        if len(self.templates) == 0:
+            return DataResponse(Result=False, Message="No valid template loaded")
+
+        return DataResponse(Result=True, Message="Load Templates Successfully!")
+
+    # ==========================================================
+    # BASIC UTILS
+    # ==========================================================
 
     @staticmethod
     def _convert_2_base64(image):
-        success, encoded_image = cv2.imencode('.png', image)
+        success, encoded_image = cv2.imencode(".png", image)
+
         if not success:
             return None
+
         image_bytes = encoded_image.tobytes()
         img_base64 = base64.b64encode(image_bytes).decode("utf-8")
 
         return img_base64
 
-    # def cal_robot_coord(self, image, pcb_width, pcb_height):
-    #     img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    #     matches = self.image_matcher.match(img_gray, self.template)
-    #     if len(matches) == 0:
-    #         matches = self.image_matcher.match(img_gray, self.template_2)
-    #         if len(matches) == 0:
-    #             return DataResponse(Result=False, Message='Không tìm thấy góc PCB')
-    #
-    #     result = matches[0]
-    #
-    #     angle = result.angle
-    #     left_bottom_x = result.left_bottom_x
-    #     left_bottom_y = result.left_bottom_y
-    #
-    #     print(left_bottom_x, left_bottom_y)
-    #
-    #     cx, cy, robot_angle = self.compute_robot_pose([left_bottom_x, left_bottom_y], angle, pcb_width, pcb_height)
-    #
-    #     cv2.polylines(image, [np.array(
-    #         [[result.left_top_x, result.left_top_y], [result.right_top_x, result.right_top_y],
-    #          [result.right_bottom_x, result.right_bottom_y], [result.left_bottom_x, result.left_bottom_y]], np.int32)],
-    #                   True, (0, 255, 0), 1)
-    #
-    #
-    #     # Get draw text pos
-    #     if result.left_top_x < result.right_top_x:
-    #         draw_x = int(result.left_top_x) - 100
-    #     else:
-    #         draw_x = int(result.right_top_x) - 100
-    #
-    #     if result.left_top_y < result.right_top_y:
-    #         draw_Y = int(result.left_top_y) - 50
-    #     else:
-    #         draw_Y = int(result.right_top_y) - 50
-    #
-    #     cv2.putText(image, f"Score: {result.score:.4f}", (draw_x, draw_Y-50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #     cv2.putText(image, f"Angle: {angle:.4f} -- X: {left_bottom_x:.4f} -- Y: {left_bottom_y:.4f}", (draw_x, draw_Y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-    #
-    #     return DataResponse(Result=True,
-    #                         Score=result.score,
-    #                         ResImg=self._convert_2_base64(image),
-    #                         ImageX=left_bottom_x,
-    #                         ImageY=left_bottom_y,
-    #                         ImageAngle=angle,
-    #                         RobotX=cx-self.offset_x,
-    #                         RobotY=cy+self.offset_y,
-    #                         RobotAngle=robot_angle
-    #                         )
+    @staticmethod
+    def _normalize_angle(angle):
+        while angle > 180.0:
+            angle -= 360.0
 
-    def cal_robot_coord(self, image, pcb_width, pcb_height):
-        img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        while angle <= -180.0:
+            angle += 360.0
 
-        matches = []
-        for template in self.templates:
-            matches = self.image_matcher.match(img_gray, template)
-            if len(matches) == 0:
-                continue
+        return angle
 
-        if len(matches) == 0:
-            return DataResponse(Result=False, Message='Không tìm thấy góc PCB')
+    @staticmethod
+    def _rotate_vector(x, y, angle_deg):
+        theta = math.radians(angle_deg)
 
-        result = matches[0]
+        cos_t = math.cos(theta)
+        sin_t = math.sin(theta)
 
-        angle = result.angle
-        bottom_left_x = result.left_bottom_x
-        bottom_left_y = result.left_bottom_y
+        rx = x * cos_t - y * sin_t
+        ry = x * sin_t + y * cos_t
 
-        print(bottom_left_x, bottom_left_y)
+        return rx, ry
 
-        cx, cy, robot_angle = self.compute_robot_pose_from_bottom_left([bottom_left_x, bottom_left_y], angle, pcb_width, pcb_height)
+    def _transform_point_to_robot(self, point):
+        """
+        Wrapper cho self.calib.transform để tránh lỗi format.
 
-        cv2.polylines(image, [np.array(
-            [[result.left_top_x, result.left_top_y], [result.right_top_x, result.right_top_y],
-             [result.right_bottom_x, result.right_bottom_y], [result.left_bottom_x, result.left_bottom_y]], np.int32)],
-                      True, (0, 255, 0), 1)
+        Input:
+            point = [image_x, image_y]
 
+        Output:
+            robot_x, robot_y
+        """
 
-        # Get draw text pos
-        if result.left_top_x < result.right_top_x:
-            draw_x = int(result.left_top_x) - 100
-        else:
-            draw_x = int(result.right_top_x) - 100
+        if point is None or len(point) < 2:
+            raise ValueError("Invalid image point")
 
-        if result.left_top_y < result.right_top_y:
-            draw_Y = int(result.left_top_y) - 50
-        else:
-            draw_Y = int(result.right_top_y) - 50
+        robot_point = self.calib.transform([float(point[0]), float(point[1])])
 
-        cv2.putText(image, f"Score: {result.score:.4f}", (draw_x, draw_Y-50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-        cv2.putText(image, f"Angle: {angle:.4f} -- X: {bottom_left_x:.4f} -- Y: {bottom_left_y:.4f}", (draw_x, draw_Y), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        robot_arr = np.array(robot_point, dtype=float).reshape(-1)
 
-        target_x = cx - self.offset_x
-        target_y = cy + self.offset_y
+        if len(robot_arr) < 2:
+            raise ValueError(f"Invalid calibration result: {robot_point}")
 
-        tcp_x, tcp_y = self.compensate_tool_offset(
-            target_x,
-            target_y,
-            robot_angle
+        return float(robot_arr[0]), float(robot_arr[1])
+
+    # ==========================================================
+    # OFFSET PARSER
+    # ==========================================================
+
+    @staticmethod
+    def _try_parse_string_offset(offset):
+        """
+        Offset đôi khi từ C# gửi sang có thể là string JSON.
+        Hàm này hỗ trợ:
+            '{"OffsetX": 1, "OffsetY": 2, "OffsetRZ": 3}'
+            "{'OffsetX': 1, 'OffsetY': 2, 'OffsetRZ': 3}"
+        """
+
+        if not isinstance(offset, str):
+            return offset
+
+        text = offset.strip()
+
+        if text == "":
+            raise ValueError("Offset string is empty")
+
+        try:
+            return json.loads(text)
+        except Exception:
+            pass
+
+        try:
+            return ast.literal_eval(text)
+        except Exception:
+            pass
+
+        raise ValueError(f"Cannot parse offset string: {offset}")
+
+    @staticmethod
+    def _get_offset_value(offset, names, index):
+        """
+        Hỗ trợ offset dạng:
+            dict:
+                {"OffsetX": ..., "OffsetY": ..., "OffsetRZ": ...}
+
+            object:
+                offset.OffsetX, offset.OffsetY, offset.OffsetRZ
+
+            list:
+                [OffsetX, OffsetY, OffsetRZ]
+        """
+
+        if isinstance(offset, dict):
+            for name in names:
+                if name in offset:
+                    return float(offset[name])
+
+        for name in names:
+            if hasattr(offset, name):
+                return float(getattr(offset, name))
+
+        if isinstance(offset, (list, tuple)) and len(offset) > index:
+            return float(offset[index])
+
+        raise ValueError(f"Cannot get offset value. Offset={offset}, names={names}, index={index}")
+
+    def _parse_robot_offset_vector(self, robot_offset_vector):
+        robot_offset_vector = self._try_parse_string_offset(robot_offset_vector)
+
+        offset_x = self._get_offset_value(
+            robot_offset_vector,
+            ["OffsetX", "offsetX", "offset_x"],
+            0
         )
 
-        return DataResponse(Result=True,
-                            Score=result.score,
-                            ResImg=self._convert_2_base64(image),
-                            ImageX=bottom_left_x,
-                            ImageY=bottom_left_y,
-                            ImageAngle=angle,
-                            RobotX=tcp_x,
-                            RobotY=tcp_y,
-                            RobotAngle=robot_angle + self.tool_offset_rz
-                            )
+        offset_y = self._get_offset_value(
+            robot_offset_vector,
+            ["OffsetY", "offsetY", "offset_y"],
+            1
+        )
 
-    def compute_robot_pose(self, corner, theta_deg, pcb_w, pcb_h):
-        corner_robot = self.calib.transform(corner)
+        offset_rz = self._get_offset_value(
+            robot_offset_vector,
+            ["OffsetRZ", "offsetRZ", "offset_rz"],
+            2
+        )
 
-        theta = math.radians(theta_deg)
+        return offset_x, offset_y, offset_rz
 
-        dx = pcb_w / 2
-        dy = pcb_h / 2
+    # ==========================================================
+    # IMAGE ANGLE -> ROBOT ANGLE
+    # ==========================================================
 
-        dx_r = dx * math.cos(theta) - dy * math.sin(theta)
-        dy_r = dx * math.sin(theta) + dy * math.cos(theta)
-
-        center_x = corner_robot[0] + dx_r
-        center_y = corner_robot[1] + dy_r
-
-        robot_theta = theta_deg
-
-        return center_x, center_y, robot_theta
-
-    def compute_robot_pose_from_top_right(self, corner, theta_deg, pcb_w, pcb_h):
-        corner_robot = self.calib.transform(corner)
-
-        theta = math.radians(theta_deg)
-
-        # Vector từ TOP_RIGHT về tâm PCB
-        dx = -pcb_w / 2
-        dy = -pcb_h / 2
-
-        dx_r = dx * math.cos(theta) - dy * math.sin(theta)
-        dy_r = dx * math.sin(theta) + dy * math.cos(theta)
-
-        center_x = corner_robot[0] + dx_r
-        center_y = corner_robot[1] + dy_r
-
-        robot_theta = theta_deg
-
-        return center_x, center_y, robot_theta
-
-    def compute_robot_pose_from_bottom_left(self, corner, theta_deg, pcb_w, pcb_h):
-        corner_robot = self.calib.transform(corner)
-
-        theta = math.radians(theta_deg)
-
-        # Vector từ BOTTOM_LEFT về tâm PCB
-        dx = -pcb_w/2
-        dy = -pcb_h/2
-
-        dx_r = dx * math.cos(theta) - dy * math.sin(theta)
-        dy_r = dx * math.sin(theta) + dy * math.cos(theta)
-
-        center_x = corner_robot[0] + dx_r
-        center_y = corner_robot[1] + dy_r
-
-        robot_theta = theta_deg
-
-        return center_x, center_y, robot_theta
-
-    def compensate_tool_offset(self, target_x, target_y, robot_angle_deg):
+    def image_angle_to_robot_angle_by_calib(self, center_point, image_angle):
         """
-        target_x, target_y: tọa độ điểm cần gắp thực tế, ví dụ tâm PCB
-        robot_angle_deg: góc robot/tool đang xoay
-        tool_offset_x: khoảng lệch từ TCP tới điểm gắp theo chiều dài tool
-        tool_offset_y: khoảng lệch theo chiều rộng tool, trường hợp này = 0
+        Tính góc object trong hệ robot bằng calibration.
 
-        Trả về tọa độ TCP cần chạy tới.
+        Không hardcode:
+            robot_angle = image_angle
+            robot_angle = 180 - image_angle
+
+        Cách làm:
+            1. Lấy center ảnh C.
+            2. Tạo điểm hướng P theo image_angle trên ảnh.
+            3. Transform C và P sang robot.
+            4. atan2(P_robot - C_robot).
         """
-        theta = np.deg2rad(robot_angle_deg)
 
-        offset_robot_x = self.tool_offset_x * np.cos(theta) - self.tool_offset_y * np.sin(theta)
-        offset_robot_y = self.tool_offset_x * np.sin(theta) + self.tool_offset_y * np.cos(theta)
+        if center_point is None or len(center_point) < 2:
+            raise ValueError("center_point invalid")
 
-        tcp_x = target_x - offset_robot_x
-        tcp_y = target_y - offset_robot_y
+        cx = float(center_point[0])
+        cy = float(center_point[1])
 
-        return tcp_x, tcp_y
+        theta = math.radians(float(image_angle))
+        length = float(self.direction_length_pixel)
+
+        direction_image_x = cx + length * math.cos(theta)
+        direction_image_y = cy + length * math.sin(theta)
+
+        center_robot_x, center_robot_y = self._transform_point_to_robot([cx, cy])
+        direction_robot_x, direction_robot_y = self._transform_point_to_robot(
+            [direction_image_x, direction_image_y]
+        )
+
+        dx = direction_robot_x - center_robot_x
+        dy = direction_robot_y - center_robot_y
+
+        if abs(dx) < 1e-9 and abs(dy) < 1e-9:
+            raise ValueError("Cannot calculate robot angle because direction vector is zero")
+
+        robot_angle = math.degrees(math.atan2(dy, dx))
+
+        return self._normalize_angle(robot_angle)
+
+    # ==========================================================
+    # CORE CALCULATION
+    # ==========================================================
+
+    def compute_robot_pose(self, center_point, image_angle, robot_offset_vector):
+        """
+        center_point:
+            Center object hiện tại detect được trên ảnh, đơn vị pixel.
+
+        image_angle:
+            Góc object hiện tại trên ảnh, degree.
+
+        robot_offset_vector:
+            Offset đã lưu từ C#.
+
+            BẮT BUỘC phải là offset local:
+                OffsetX: offset local X từ center object tới điểm gắp
+                OffsetY: offset local Y từ center object tới điểm gắp
+                OffsetRZ: robotRZ - objectRobotAngle
+
+        return:
+            pick_x, pick_y, robot_theta, object_robot_angle
+        """
+
+        if center_point is None or len(center_point) < 2:
+            raise ValueError("center_point invalid")
+
+        # 1. Center ảnh hiện tại -> robot
+        center_robot_x, center_robot_y = self._transform_point_to_robot(center_point)
+
+        # 2. Góc object hiện tại trong hệ robot
+        object_robot_angle = self.image_angle_to_robot_angle_by_calib(
+            center_point,
+            image_angle
+        )
+
+        # 3. Lấy offset local từ dữ liệu C#
+        offset_local_x, offset_local_y, offset_rz = self._parse_robot_offset_vector(
+            robot_offset_vector
+        )
+
+        # 4. Xoay offset local sang hệ robot global
+        dx_robot, dy_robot = self._rotate_vector(
+            offset_local_x,
+            offset_local_y,
+            object_robot_angle
+        )
+
+        # 5. Tính tọa độ điểm gắp
+        pick_x = center_robot_x + dx_robot
+        pick_y = center_robot_y + dy_robot
+
+        # 6. Tính robot RZ
+        robot_theta = object_robot_angle + offset_rz
+        robot_theta = self._normalize_angle(robot_theta)
+
+        return pick_x, pick_y, robot_theta, object_robot_angle
+
+    # ==========================================================
+    # MAIN API
+    # ==========================================================
+
+    def cal_robot_coord(self, image):
+        if image is None:
+            return DataResponse(Result=False, Message="Image is None")
+
+        if len(self.templates) == 0:
+            return DataResponse(Result=False, Message="No template loaded")
+
+        if len(self.offsets) != len(self.templates):
+            return DataResponse(Result=False, Message="Template and offset count not matching")
+
+        if len(image.shape) == 3:
+            img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            draw_image = image.copy()
+        else:
+            img_gray = image.copy()
+            draw_image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
+        matches = []
+        temp_idx = -1
+
+        for i, template in enumerate(self.templates):
+            cur_matches = self.image_matcher.match(img_gray, template)
+
+            if cur_matches is None or len(cur_matches) == 0:
+                continue
+
+            matches = cur_matches
+            temp_idx = i
+            break
+
+        if len(matches) == 0 or temp_idx < 0:
+            return DataResponse(Result=False, Message="Không tìm thấy PCB / template")
+
+        robot_offset_vector = self.offsets[temp_idx]
+        result = matches[0]
+
+        angle = float(result.angle)
+        center_x = float(result.center_x)
+        center_y = float(result.center_y)
+
+        try:
+            pick_x, pick_y, robot_angle, object_robot_angle = self.compute_robot_pose(
+                [center_x, center_y],
+                angle,
+                robot_offset_vector
+            )
+        except Exception as ex:
+            return DataResponse(
+                Result=False,
+                Message=f"Compute robot pose error: {str(ex)}"
+            )
+
+        # ======================================================
+        # DRAW RESULT
+        # ======================================================
+
+        polygon = np.array(
+            [
+                [result.left_top_x, result.left_top_y],
+                [result.right_top_x, result.right_top_y],
+                [result.right_bottom_x, result.right_bottom_y],
+                [result.left_bottom_x, result.left_bottom_y],
+            ],
+            dtype=np.int32
+        )
+
+        cv2.polylines(draw_image, [polygon], True, (0, 255, 0), 2)
+
+        cv2.circle(
+            draw_image,
+            (int(center_x), int(center_y)),
+            5,
+            (0, 0, 255),
+            -1
+        )
+
+        draw_x = int(np.min(polygon[:, 0]))
+        draw_y = int(np.min(polygon[:, 1]))
+
+        draw_x = max(draw_x - 50, 0)
+        draw_y = max(draw_y - 60, 30)
+
+        score = float(result.score)
+
+        cv2.putText(
+            draw_image,
+            f"Score: {score:.4f}",
+            (draw_x, draw_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2
+        )
+
+        cv2.putText(
+            draw_image,
+            f"ImgX: {center_x:.3f} ImgY: {center_y:.3f} ImgA: {angle:.3f}",
+            (draw_x, draw_y + 35),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2
+        )
+
+        cv2.putText(
+            draw_image,
+            f"ObjRobotA: {object_robot_angle:.3f}",
+            (draw_x, draw_y + 70),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2
+        )
+
+        cv2.putText(
+            draw_image,
+            f"RobotX: {pick_x:.3f} RobotY: {pick_y:.3f} RZ: {robot_angle:.3f}",
+            (draw_x, draw_y + 105),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2
+        )
+
+        return DataResponse(
+            Result=True,
+            Message="Calculate robot coordinate successfully",
+            Score=score,
+            ResImg=self._convert_2_base64(draw_image),
+            ImageX=center_x,
+            ImageY=center_y,
+            ImageAngle=angle,
+            RobotX=pick_x,
+            RobotY=pick_y,
+            RobotAngle=robot_angle
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pass

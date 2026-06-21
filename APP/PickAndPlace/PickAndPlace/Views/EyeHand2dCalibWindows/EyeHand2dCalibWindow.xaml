@@ -458,6 +458,7 @@
                                         Height="25"
                                         Margin="5,-5,0,0"
                                         HorizontalContentAlignment="Center"
+                                        PreviewTextInput="tbRobot_PreviewTextInput"
                                         VerticalContentAlignment="Center"
                                         BorderBrush="DarkGray"
                                         FontSize="14"
@@ -477,6 +478,7 @@
                                         Height="25"
                                         Margin="5,-5,0,0"
                                         HorizontalContentAlignment="Center"
+                                        PreviewTextInput="tbRobot_PreviewTextInput"
                                         VerticalContentAlignment="Center"
                                         BorderBrush="DarkGray"
                                         FontSize="14"
@@ -531,6 +533,7 @@
                                         VerticalContentAlignment="Center"
                                         BorderBrush="DarkGray"
                                         FontSize="14"
+                                        PreviewTextInput="tbRobot_PreviewTextInput"
                                         FontWeight="Bold"
                                         IsReadOnly="False" />
                                 </StackPanel>
@@ -548,6 +551,7 @@
                                         Margin="5,-5,0,0"
                                         HorizontalContentAlignment="Center"
                                         VerticalContentAlignment="Center"
+                                        PreviewTextInput="tbRobot_PreviewTextInput"
                                         BorderBrush="DarkGray"
                                         FontSize="14"
                                         FontWeight="Bold"

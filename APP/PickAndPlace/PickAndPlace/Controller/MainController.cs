@@ -137,8 +137,15 @@ namespace PickAndPlace.Controller
 
         private bool LoadTemplatesToEngine(List<Template> templates)
         {
-            var imageList = templates.Select(x => x.Image).ToList();
-            return APICommunication.LoadTemplates(_param.ApiUrlAi, imageList);
+            List < Image<Bgr, byte> > imageList = new List<Image<Bgr, byte>>();
+            List<List<double>> offsets = new List<List<double>>();
+            foreach (var template in templates)
+            {
+                imageList.Append(template.Image);
+                offsets.Add(new List<double> { template.OffsetX, template.OffsetY, template.OffsetRZ });
+            }
+
+            return APICommunication.LoadTemplates(_param.ApiUrlAi, imageList, offsets);
         }
         private void StartCheckTriggerTimer()
         {
@@ -150,6 +157,11 @@ namespace PickAndPlace.Controller
 
         private async void OnTriggerTimerElapsed(object sender, ElapsedEventArgs e)
         {
+            await ProcessImageAsync(_model);
+            StopPlcTimer();
+
+            // debug
+
             if (!_isRunning || _inspectCts.IsCancellationRequested || _robot == null) return;
             StopPlcTimer();
 
@@ -237,6 +249,7 @@ namespace PickAndPlace.Controller
 
         private async Task<bool> CheckAndStartRobotAsync()
         {
+            return true;
             try
             {
                 if (_robot != null && _robot.IsConnected())
@@ -285,7 +298,7 @@ namespace PickAndPlace.Controller
 
         private bool CheckAndStartCamera()
         {
-            //return true;
+            return true;
             _cameraManager = CameraManager.GetInstance();
             _camera = _cameraManager.GetCamera();
             if (!_camera.IsOpen())
@@ -302,19 +315,21 @@ namespace PickAndPlace.Controller
 
         internal async Task ProcessImageAsync(ModelInfo model)
         {
-            if (_camera == null)
-            {
-                AppLogger.Instance.Error("Camera is null.", "CAMERA_ERROR");
-                return;
-            }
+            //if (_camera == null)
+            //{
+            //    AppLogger.Instance.Error("Camera is null.", "CAMERA_ERROR");
+            //    return;
+            //}
 
-            if (_robot == null || !_robot.IsConnected())
-            {
-                AppLogger.Instance.Error("Robot is not connected.", "ROBOT_ERROR");
-                return;
-            }
+            //if (_robot == null || !_robot.IsConnected())
+            //{
+            //    AppLogger.Instance.Error("Robot is not connected.", "ROBOT_ERROR");
+            //    return;
+            //}
 
-            var bitmap = _camera.TriggerAndGetFrame();
+            //var bitmap = _camera.TriggerAndGetFrame();
+
+            Bitmap bitmap = new Bitmap(@"F:\working\0.PROJECT\0.pick_multi_pcb\Image_20260307110740938.bmp");
 
             AppLogger.Instance.Info("DONE Capturing Image", "SYSTEM");
             _mainWindow.UpdateImage(bitmap);
@@ -323,9 +338,7 @@ namespace PickAndPlace.Controller
 
             var res = APICommunication.GetRealCoord(
                 _param.ApiUrlAi,
-                emguCvImage,
-                model.Width,
-                model.Height
+                emguCvImage
             );
 
             if (res == null)

@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using Emgu.CV;
+using Emgu.CV.Structure;
+using Newtonsoft.Json;
 using PickAndPlace.Utils;
 using System;
 using System.Collections.Generic;
@@ -19,9 +21,11 @@ namespace PickAndPlace.Models
         public string CreatedTime { get; set; }
         public string Name { get; set; }
         public string BigImagePath { get; set; }
+        [JsonIgnore]
+        public Image<Bgr, byte> BigImage { get; set; }
         public RobotPose PickPose { get; set; }
-        private Template _templates;
-        public Template Templates
+        private List<Template> _templates;
+        public List<Template> Templates
         {
             get => _templates;
             set
@@ -34,18 +38,21 @@ namespace PickAndPlace.Models
             }
         }
 
-
-
-
-        public ModelInfo(string name, double width, double height, List<Template> templates, string createdTime) => (Name, Width, Height, Templates, CreatedTime) = (name, width, height, templates, createdTime);
+        public ModelInfo(string name, List<Template> templates, string createdTime, string bigImagePath, RobotPose pickPose)
+        {
+            Name = name;
+            Templates = templates;
+            CreatedTime = createdTime;
+            BigImagePath = bigImagePath;
+            PickPose = pickPose;
+            BigImage = new Image<Bgr, byte>(bigImagePath);
+        }
         public ModelInfo() { }
         public ModelInfo(string name)
         {
             Name = name;
             CreatedTime = DateTime.Now.ToString();
             Templates = new List<Template>();
-            Width = 0;
-            Height = 0;
         }
         public static List<ModelInfo> LoadModelsList()
         {
@@ -61,7 +68,8 @@ namespace PickAndPlace.Models
             }
             return modelNamesList;
         }
-        public static ModelInfo LoadModelByName(string modelName)
+        public static ModelInfo 
+            LoadModelByName(string modelName)
         {
             ModelInfo model = null;
             string path = Properties.Settings.Default.MODELS_PATH + "/" + modelName + "/" + modelName + ".json";
@@ -69,7 +77,8 @@ namespace PickAndPlace.Models
             {
                 string str = File.ReadAllText(path);
                 model = JsonConvert.DeserializeObject<ModelInfo>(str);
-                if (model.Height == 0 || model.Width == 0 || model.Templates == null || model.Templates.Count == 0)
+                model.BigImage = new Image<Bgr, byte>(model.BigImagePath);
+                if (model.Templates == null || model.Templates.Count == 0)
                 {
                     // Remove invalid model
                     Directory.Delete(IO.GetFolderPath(path), true);
@@ -100,10 +109,13 @@ namespace PickAndPlace.Models
                 }
 
                 // Save Images
+                if (this.BigImage != null && this.BigImagePath != null)
+                    this.BigImage.Save(this.BigImagePath);
                 foreach (var template in this.Templates)
                 {
                     template.Image.Save(template.ImagePath);
                 }
+                
             }
             catch (Exception ex)
             {

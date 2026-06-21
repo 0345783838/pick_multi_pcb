@@ -2,6 +2,8 @@
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using LincolnVision.ImageViewer;
+using PickAndPlace.Controller.Robot;
+using PickAndPlace.Controllers.APIs;
 using PickAndPlace.Controllers.Camera;
 using PickAndPlace.Models;
 using PickAndPlace.Utils;
@@ -14,6 +16,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Web;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -139,6 +142,9 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             }
         }
 
+        // ------------- Robot Pose ------------- //
+        private Models.RobotPose _robotPose;
+
         public bool CameraConnected { get; set; }
         public bool CanSave { get; set; }
         public bool CanProcesImage { get; set; }
@@ -148,11 +154,12 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             get { return GetCurrentRotatedRectangle() != null; }
         }
 
-        public TemplatesSettingWindow(ModelsManagerWindow window, ModelInfo model)
+        public TemplatesSettingWindow(ModelsManagerWindow window, ModelInfo model, Models.RobotPose robotPose)
         {
             InitializeComponent();
             _model = model;
             _modelsWindow = window;
+            _robotPose = robotPose;
             DataContext = this;
             Init();
         }
@@ -171,7 +178,7 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             {
                 TemplatesList.Add(_model.Templates[i]);
             }
-
+            
             InitImageViewer();
             ResetRoiInfo();
         }
@@ -188,6 +195,21 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             imageViewer.ShapeCreated += ImageViewer_ShapeCreated;
             imageViewer.ShapeChanged += ImageViewer_ShapeChanged;
             imageViewer.ShapeSelectionChanged += ImageViewer_ShapeSelectionChanged;
+
+            if (_model.Templates.Count > 0)
+            {
+                SelectedTemplate = _model.Templates[0];
+            }
+            if (_model.BigImage != null)
+            {
+                BitmapSource source = Converter.BitmapToBitmapSource(_model.BigImage.Bitmap);
+                _curImage = new Image<Bgr, byte>(_model.BigImage.Bitmap);
+                imageViewer.LoadImage(source);
+                imageViewer.Focus();
+                CanProcesImage = true;
+                OnPropertyChanged(nameof(CanProcesImage));
+                OnPropertyChanged(nameof(CanAddRemove));
+            }
         }
 
         private void OnTemplateSelectionChanged()
@@ -247,7 +269,7 @@ namespace PickAndPlace.Views.ModelsManagerWindows
         {
             //Bitmap bitmap = _cam.TriggerAndGetFrame();
             // Debug sample:
-            Bitmap bitmap = new Bitmap(@"D:\huynhvc\OTHERS\pick_and_place\program\pick_and_place\Image_20260306205408882.bmp");
+            Bitmap bitmap = new Bitmap(@"F:\working\0.PROJECT\0.pick_multi_pcb\Image_20260307110740938.bmp");
 
             _curImage = new Image<Bgr, byte>(bitmap);
             _curTempImage = null;
@@ -310,6 +332,7 @@ namespace PickAndPlace.Views.ModelsManagerWindows
         private void btnAddTemplate_MouseDown(object sender, MouseButtonEventArgs e)
         {
             VisionShape roi = GetCurrentRotatedRectangle();
+
             if (roi == null || _curTempImage == null)
             {
                 var error = new ErrorWindow("Please create a rotated ROI first!\rHãy tạo ROI xoay trước!");
@@ -317,18 +340,124 @@ namespace PickAndPlace.Views.ModelsManagerWindows
                 return;
             }
 
-            // Đây là thông số mày cần để lưu master point.
-            // Nếu Template/ModelInfo của mày có field riêng thì gán thêm tại đây.
             MasterRoiInfo roiInfo = GetCurrentMasterRoiInfo();
+
             _logger.Info(string.Format(
                 "Master ROI: Cx={0:F3}, Cy={1:F3}, W={2:F3}, H={3:F3}, Angle={4:F3}",
-                roiInfo.Cx, roiInfo.Cy, roiInfo.Width, roiInfo.Height, roiInfo.AngleDeg));
+                roiInfo.Cx,
+                roiInfo.Cy,
+                roiInfo.Width,
+                roiInfo.Height,
+                roiInfo.AngleDeg));
 
             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            var template = new Models.Template(
+
+            var template = new Template(
                 TemplatesList.Count,
                 _curTempImage,
-                string.Format("{0}/{1}/{2}.png", _param.MODELS_PATH, _model.Name, timestamp));
+                string.Format("{0}/{1}/{2}.png", _param.MODELS_PATH, _model.Name, timestamp),
+                roiInfo.Cx,
+                roiInfo.Cy,
+                roiInfo.Width,
+                roiInfo.Height,
+                roiInfo.AngleDeg);
+
+            // ==========================================================
+            // 1. Transform center ROI từ image sang robot
+            // ==========================================================
+
+            var resCenter = APICommunication.TransformPoint(
+                _param.ApiUrlAi,
+                roiInfo.Cx,
+                roiInfo.Cy);
+
+            if (resCenter == null)
+            {
+                ErrorWindow error = new ErrorWindow(
+                    "Cannot transform master center point to real coordinate, check calibration!\rKhông chuyển được tâm master sang tọa độ robot, kiểm tra calibration!");
+                error.ShowDialog();
+                return;
+            }
+
+            double realRobotCenterX = (double)resCenter.RobotX;
+            double realRobotCenterY = (double)resCenter.RobotY;
+
+            // ==========================================================
+            // 2. Tạo thêm 1 điểm hướng theo Angle của ROI trên ảnh
+            // ==========================================================
+
+            const double DIRECTION_LENGTH_PIXEL = 100.0;
+
+            double theta = roiInfo.AngleDeg * Math.PI / 180.0;
+
+            double directionImageX = roiInfo.Cx + DIRECTION_LENGTH_PIXEL * Math.Cos(theta);
+            double directionImageY = roiInfo.Cy + DIRECTION_LENGTH_PIXEL * Math.Sin(theta);
+
+            // ==========================================================
+            // 3. Transform điểm hướng đó sang robot
+            // ==========================================================
+
+            var resDirection = APICommunication.TransformPoint(
+                _param.ApiUrlAi,
+                directionImageX,
+                directionImageY);
+
+            if (resDirection == null)
+            {
+                ErrorWindow error = new ErrorWindow(
+                    "Cannot transform master direction point to real coordinate, check calibration!\rKhông chuyển được điểm hướng của master sang tọa độ robot, kiểm tra calibration!");
+                error.ShowDialog();
+                return;
+            }
+
+            double directionRobotX = (double)resDirection.RobotX;
+            double directionRobotY = (double)resDirection.RobotY;
+
+            // ==========================================================
+            // 4. Tính góc object master trong hệ robot
+            // ==========================================================
+
+            double masterRobotAngle;
+
+            try
+            {
+                masterRobotAngle = Models.Template.CalculateRobotAngleFromTwoRobotPoints(
+                    realRobotCenterX,
+                    realRobotCenterY,
+                    directionRobotX,
+                    directionRobotY);
+            }
+            catch (Exception ex)
+            {
+                ErrorWindow error = new ErrorWindow(
+                    "Cannot calculate master robot angle!\rKhông tính được góc master trong hệ robot!\r" + ex.Message);
+                error.ShowDialog();
+                return;
+            }
+
+            _logger.Info(string.Format(
+                "Master Robot Coord: CenterX={0:F3}, CenterY={1:F3}, MasterRobotAngle={2:F3}",
+                realRobotCenterX,
+                realRobotCenterY,
+                masterRobotAngle));
+
+            // ==========================================================
+            // 5. Lưu offset local từ center object tới điểm robot gắp chuẩn
+            // ==========================================================
+
+            template.UpdateRealCoord(
+                realRobotCenterX,
+                realRobotCenterY,
+                masterRobotAngle,
+                _robotPose.X,
+                _robotPose.Y,
+                _robotPose.Rz);
+
+            _logger.Info(string.Format(
+                "Template Offset: OffsetX={0:F3}, OffsetY={1:F3}, OffsetRZ={2:F3}",
+                template.OffsetX,
+                template.OffsetY,
+                template.OffsetRZ));
 
             TemplatesList.Add(template);
 
@@ -347,6 +476,9 @@ namespace PickAndPlace.Views.ModelsManagerWindows
         private void btnSave_MouseDown(object sender, MouseButtonEventArgs e)
         {
             _model.Templates = TemplatesList.ToList();
+            _model.BigImage = _curImage;
+            _model.BigImagePath = string.Format("{0}/{1}/{2}.png", _param.MODELS_PATH, _model.Name, "bigImage");
+            _model.PickPose = _robotPose;
 
             // Nếu cần lưu master point vào ModelInfo thì thêm field vào ModelInfo rồi gán ở đây.
             // Ví dụ:
@@ -359,7 +491,6 @@ namespace PickAndPlace.Views.ModelsManagerWindows
 
             var info = new InformationWindow("Save successfully!");
             info.ShowDialog();
-            Close();
         }
 
         private void udtbAngle_PreviewTextInput(object sender, TextCompositionEventArgs e)
@@ -626,6 +757,11 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             // Delete: delete ROI
             // Esc: select mode
             // Giữ hàm này để không lỗi XAML cũ.
+        }
+
+        private void btnTest_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+
         }
     }
 

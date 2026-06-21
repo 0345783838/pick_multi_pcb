@@ -11,9 +11,9 @@ namespace PickAndPlace.Models
         public double X { get; set; }
         public double Y { get; set; }
         public double Z { get; set; }
-        public double RZ { get; set; }
+        public double Rz { get; set; }
 
         public RobotPose() { }
-        public RobotPose(double x, double y, double z, double rz) => (X, Y, Z, RZ) = (x, y, z, rz);
+        public RobotPose(double x, double y, double z, double rz) => (X, Y, Z, Rz) = (x, y, z, rz);
     }
 }

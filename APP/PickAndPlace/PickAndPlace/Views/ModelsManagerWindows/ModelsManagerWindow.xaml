@@ -122,11 +122,7 @@
                                 <StackPanel Orientation="Horizontal" />
                                 <StackPanel Orientation="Horizontal">
                                     <Label Content="Robot Teaching Pose:" />
-                                    <Label x:Name="lbRobotPose" Content="{Binding SelectedModel.Width, FallbackValue='-----'}" />
-                                </StackPanel>
-                                <StackPanel Orientation="Horizontal">
-                                    <Label Content="Image Master Point:  " />
-                                    <Label x:Name="lbMasterPoint" Content="{Binding SelectedModel.Height, FallbackValue='-----'}" />
+                                    <Label x:Name="lbRobotPose" Content="{Binding RobotPoseString, FallbackValue='-----'}" />
                                 </StackPanel>
                                 <StackPanel Orientation="Horizontal">
                                     <Label Content="Templates:" />
@@ -186,8 +182,11 @@
                                                         Name="tbRobotX"
                                                         Width="65"
                                                         Height="25"
+                                                        Text="{Binding SelectedModel.PickPose.X, FallbackValue=''}"
                                                         Margin="5,-5,0,0"
+                                                        IsEnabled="{Binding IsMoldelSelected}"
                                                         HorizontalContentAlignment="Center"
+                                                        PreviewTextInput="tbRobot_PreviewTextInput"
                                                         VerticalContentAlignment="Center"
                                                         BorderBrush="DarkGray"
                                                         FontSize="14"
@@ -205,7 +204,10 @@
                                                         Name="tbRobotY"
                                                         Width="65"
                                                         Height="25"
+                                                        Text="{Binding SelectedModel.PickPose.Y, FallbackValue=''}"
                                                         Margin="5,-5,0,0"
+                                                        IsEnabled="{Binding IsMoldelSelected}"
+                                                        PreviewTextInput="tbRobot_PreviewTextInput"
                                                         HorizontalContentAlignment="Center"
                                                         VerticalContentAlignment="Center"
                                                         BorderBrush="DarkGray"
@@ -230,6 +232,9 @@
                                                         Name="tbRobotZ"
                                                         Width="65"
                                                         Height="25"
+                                                        IsEnabled="{Binding IsMoldelSelected}"
+                                                        Text="{Binding SelectedModel.PickPose.Z, FallbackValue=''}"
+                                                        PreviewTextInput="tbRobot_PreviewTextInput"
                                                         Margin="5,-5,0,0"
                                                         HorizontalContentAlignment="Center"
                                                         VerticalContentAlignment="Center"
@@ -246,10 +251,13 @@
                                                         Content="RZ"
                                                         FontSize="12" />
                                                     <TextBox
-                                                        Name="tbRobotRZ"
+                                                        Name="tbRobotRz"
                                                         Width="65"
                                                         Height="25"
                                                         Margin="5,-5,0,0"
+                                                        IsEnabled="{Binding IsMoldelSelected}"
+                                                        Text="{Binding SelectedModel.PickPose.Rz, FallbackValue=''}"
+                                                        PreviewTextInput="tbRobot_PreviewTextInput"
                                                         HorizontalContentAlignment="Center"
                                                         VerticalContentAlignment="Center"
                                                         BorderBrush="DarkGray"
@@ -271,6 +279,7 @@
                                                 x:Name="btnGetRobotCoord"
                                                 Title="Get Robot&#x0A;COORDINATE"
                                                 Width="140"
+                                                IsEnabled="{Binding IsMoldelSelected}"
                                                 Height="55"
                                                 EndColor="#1C4D8D"
                                                 FontSize="12"
@@ -278,6 +287,7 @@
                                                 IconWidth="30"
                                                 LeftIcon="/Resources/Icons/geolocation.png"
                                                 MouseDown="btnGetRobotCoord_MouseDown"
+                                                
                                                 StartColor="#C8AAAA" />
 
                                         </Grid>

@@ -1,9 +1,12 @@
-﻿using PickAndPlace.Models;
+﻿using PickAndPlace.Controller.Robot;
+using PickAndPlace.Controllers;
+using PickAndPlace.Models;
 using PickAndPlace.Views.UtilitiesWindows;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -47,6 +50,7 @@ namespace PickAndPlace.Views.ModelsManagerWindows
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(CanSave));
                     OnPropertyChanged(nameof(IsMoldelSelected));
+                    OnPropertyChanged(nameof(RobotPoseString));
                 }
             }
         }
@@ -54,7 +58,14 @@ namespace PickAndPlace.Views.ModelsManagerWindows
         public bool CanSave { get; set; } = false;
         public bool IsMoldelSelected => SelectedModel != null;
 
+        public string RobotPoseString => SelectedModel?.PickPose == null ? "-----" : $"{SelectedModel?.PickPose.X}, {SelectedModel?.PickPose.Y}, {SelectedModel?.PickPose.Z}, {SelectedModel?.PickPose.Rz}";
+
+
+        private DobotRobotClient _robot;
+
         MainWindow _mainWindow;
+        private Models.RobotPose _curPose;
+
         public ModelsManagerWindow(MainWindow window, string selectedModel)
         {
             InitializeComponent();
@@ -130,28 +141,6 @@ namespace PickAndPlace.Views.ModelsManagerWindows
 
         private void btnSave_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            double w;
-            double h;
-            try
-            {
-                w = Convert.ToDouble(tbImageWidth.Text);
-                h = Convert.ToDouble(tbPcbHeight.Text);
-            }
-            catch
-            {
-                var box = new ErrorWindow("Width and Height are not valid!\rChiều rộng và chiều cao PCB không hợp lệ!");
-                box.ShowDialog();
-                return;
-            }
-
-            if (w == 0 || h == 0)
-            {
-                var box = new ErrorWindow("Width and Height must be greater than 0!\rChiều rộng và chiều cao PCB phải lớn hơn 0!");
-                box.ShowDialog();
-                return;
-            }
-            SelectedModel.Height = Convert.ToDouble(tbPcbHeight.Text);
-            SelectedModel.Width = Convert.ToDouble(tbImageWidth.Text);
             SelectedModel.SaveModel();
             btReload_Click(null, null);
             var info = new InformationWindow("Save successfully!\rLưu thành công!");
@@ -163,87 +152,42 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             ModelsList.Add(model);
             SelectedModel = model;
         }
-
-        private void tbImageWidth_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (SelectedModel == null)
-            {
-                return;
-            }
-            TextBox tb = sender as TextBox;
-            string text = tb.Text;
-            int x = 0;
-            int y = 0;
-            try
-            {
-                x = Convert.ToInt32(text);
-                y = Convert.ToInt32(tbPcbHeight.Text);
-            }
-            catch
-            {
-                return;
-            }
-
-
-            if (x != SelectedModel.Width && y != 0 && x != 0)
-            {
-                CanSave = true;
-                OnPropertyChanged(nameof(CanSave));
-            }
-            else
-            {
-                CanSave = false;
-                OnPropertyChanged(nameof(CanSave));
-            }
-        }
-
-        private void tbPcbHeight_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            if (SelectedModel == null)
-            {
-                return;
-            }
-            TextBox tb = sender as TextBox;
-            string text = tb.Text;
-            double x = 0;
-            double y = 0;
-            try
-            {
-                y = Convert.ToDouble(text);
-                x = Convert.ToDouble(tbImageWidth.Text);
-            }
-            catch
-            {
-                return;
-            }
-
-            if (y != SelectedModel.Height && x != 0 && y != 0)
-            {
-                CanSave = true;
-                OnPropertyChanged(nameof(CanSave));
-            }
-            else
-            {
-                CanSave = false;
-                OnPropertyChanged(nameof(CanSave));
-            }
-        }
-
+  
         private void btnTemplateManager_Click(object sender, RoutedEventArgs e)
         {
-            var window = new TemplatesSettingWindow(this, SelectedModel);
-            window.ShowDialog();
+            // Check if had robot coordinates, if not, show error and return.
+            if (tbRobotX.Text == string.Empty || tbRobotY.Text == string.Empty || tbRobotZ.Text == string.Empty || tbRobotRz.Text == string.Empty)
+            {
+                var error = new ErrorWindow("Please get robot coordinates first!");
+                error.ShowDialog();
+                return;
+            }
+            try
+            {
+                double.TryParse(tbRobotX.Text, out double robotX);
+                double.TryParse(tbRobotY.Text, out double robotY);
+                double.TryParse(tbRobotZ.Text, out double robotZ);
+                double.TryParse(tbRobotRz.Text, out double robotRz);
+
+                _curPose = new Models.RobotPose(robotX, robotY, robotZ, robotRz);
+
+                var window = new TemplatesSettingWindow(this, SelectedModel, _curPose);
+                window.ShowDialog();
+            }
+            catch
+            {
+                var error = new ErrorWindow("Please get robot coordinates first!");
+                error.ShowDialog();
+                return;
+            }
         }
 
         internal void UpdateModel(ModelInfo model)
         {
             SelectedModel = model;
-            double w;
-            double h;
             try
             {
-                w = Convert.ToDouble(tbImageWidth.Text);
-                h = Convert.ToDouble(tbPcbHeight.Text);
+                CanSave = true;
             }
             catch
             {
@@ -251,9 +195,165 @@ namespace PickAndPlace.Views.ModelsManagerWindows
                 OnPropertyChanged(nameof(CanSave));
                 return;
             }
-            if (w > 0 && h > 0) CanSave = true;
-            else CanSave = false;
             OnPropertyChanged(nameof(CanSave));
+        }
+
+        private async void btnGetRobotCoord_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!await CheckAndStartRobotAsync())
+            {
+                var error = new ErrorWindow("Robot is not connected!");
+                error.ShowDialog();
+                return;
+            }
+            try
+            {
+                string response = await _robot.GetPoseAsync();
+
+                if (!TryParseDobotPose(response, out double robotX, out double robotY, out double robotZ, out double robotRz))
+                {
+                    var error = new ErrorWindow($"Cannot parse robot pose!\rResponse: {response}");
+                    error.ShowDialog();
+                    return;
+                }
+
+                UpdateRobotCoord(robotX, robotY, robotZ, robotRz);
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Instance.Error(ex.Message, "SYSTEM");
+
+                var error = new ErrorWindow($"Cannot get robot pose, err: {ex.Message}");
+                error.ShowDialog();
+            }
+        }
+
+        private void UpdateRobotCoord(double x, double y, double z, double rz)
+        {
+            this.Dispatcher.Invoke(() =>
+            {
+                tbRobotX.Text = x.ToString("0.00");
+                tbRobotY.Text = y.ToString("0.00");
+                tbRobotZ.Text = z.ToString("0.00");
+                tbRobotRz.Text = rz.ToString("0.00");
+            });
+
+        }
+
+        private static bool TryParseDobotPose(string response, out double x, out double y , out double z, out double rz)
+        {
+            x = 0;
+            y = 0;
+            z = 0;
+            rz = 0;
+
+            if (string.IsNullOrWhiteSpace(response))
+                return false;
+
+            string text = response.Trim();
+
+            // Support format kiểu Dobot API:
+            // 0,{100.1,200.2,50,0,0,90},GetPose();
+            int leftBrace = text.IndexOf('{');
+            int rightBrace = leftBrace >= 0 ? text.IndexOf('}', leftBrace + 1) : -1;
+
+            if (leftBrace >= 0 && rightBrace > leftBrace)
+            {
+                text = text.Substring(leftBrace + 1, rightBrace - leftBrace - 1);
+            }
+
+            // Support format custom:
+            // POSE,100.1,200.2,50,0,0,90
+            // hoặc:
+            // POSE 100.1 200.2 50 0 0 90
+            var matches = Regex.Matches(text, @"[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?");
+
+            if (matches.Count < 4)
+                return false;
+
+            bool okX = double.TryParse(
+                matches[0].Value,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out x
+            );
+
+            bool okY = double.TryParse(
+                matches[1].Value,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out y
+            );
+
+            bool okZ = double.TryParse(
+                matches[2].Value,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out z
+            );
+
+            bool okRz = double.TryParse(
+                matches[3].Value,
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out rz
+            );
+
+
+            return okX && okY && okZ && okRz;
+        }
+
+
+        private async Task<bool> CheckAndStartRobotAsync()
+        {
+            try
+            {
+                if (_robot != null && _robot.IsConnected())
+                    return true;
+
+                _robot?.Dispose();
+
+                // Dobot mặc định dùng IP 192.168.5.1, port 8000.
+                // Nếu _param.RobotIp đã config đúng thì dùng setting này.
+                _robot = new DobotRobotClient(
+                    ipAddress: _param.RobotIp,
+                    port: 8000,
+                    timeoutMs: _param.ReadPoseTimeout
+                );
+
+                bool connected = await _robot.ConnectAsync();
+
+                if (!connected)
+                {
+                    _robot.Dispose();
+                    _robot = null;
+                    return false;
+                }
+
+                return _robot.IsConnected();
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Instance.Error(ex.Message, "SYSTEM");
+
+                _robot?.Dispose();
+                _robot = null;
+
+                return false;
+            }
+        }
+
+        private void tbRobot_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            TextBox tb = sender as TextBox;
+            if (tb == null) return;
+
+            string newText = tb.Text.Remove(tb.SelectionStart, tb.SelectionLength)
+                                    .Insert(tb.SelectionStart, e.Text);
+
+            Regex regex = new Regex(@"^\d+(\.\d*)?$");
+
+            e.Handled = !regex.IsMatch(newText);
         }
     }
 }

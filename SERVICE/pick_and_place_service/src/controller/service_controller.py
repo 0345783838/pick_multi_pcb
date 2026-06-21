@@ -61,23 +61,89 @@ def cal_robot_coord(image: UploadFile = File(...), pcb_size: str = Form(...)):
 
 
 @robot_router.post(path='/load_templates')
-def load_templates(images: List[UploadFile] = File(...)):
+async def load_templates(
+    images: List[UploadFile] = File(...),
+    offsets: str = Form(...)
+):
     imgs = []
-    for image in images:
-        img_str = image.file.read()
-        if img_str is None or img_str == b'':
-            # Cannot read image
-            return HTTPException(status_code=400, detail="Invalid input")
-        try:
-            np_img = np.fromstring(img_str, np.uint8)
-            img = cv2.imdecode(np_img, flags=1)
-            if img is None:
-                raise HTTPException(status_code=400, detail="Invalid input")
-            imgs.append(img)
-        except Exception as ex:
-            raise HTTPException(status_code=400, detail="Invalid input")
 
-    res = cal_robot_coord_service.update_templates(imgs)
+    # Parse offsets từ string JSON: "[[3,5,6],[2,6,8]]"
+    try:
+        offset_list = json.loads(offsets)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid offsets format. Expected JSON string like [[3,5,6],[2,6,8]]"
+        )
+
+    # Check offsets có đúng dạng list không
+    if not isinstance(offset_list, list):
+        raise HTTPException(
+            status_code=400,
+            detail="Offsets must be a list"
+        )
+
+    # Check số lượng ảnh và offset có khớp không
+    if len(images) != len(offset_list):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Images count and offsets count not match. images={len(images)}, offsets={len(offset_list)}"
+        )
+
+    # Check mỗi offset phải có 3 giá trị: [x, y, rz]
+    for i, offset in enumerate(offset_list):
+        if not isinstance(offset, list) or len(offset) != 3:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid offset at index {i}. Expected [x, y, rz]"
+            )
+
+        try:
+            offset_list[i] = [
+                float(offset[0]),
+                float(offset[1]),
+                float(offset[2])
+            ]
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid offset value at index {i}. Offset must be numeric"
+            )
+
+    # Decode images
+    for i, image in enumerate(images):
+        img_bytes = await image.read()
+
+        if img_bytes is None or img_bytes == b'':
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid image at index {i}"
+            )
+
+        try:
+            np_img = np.frombuffer(img_bytes, np.uint8)
+            img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+
+            if img is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot decode image at index {i}"
+                )
+
+            imgs.append(img)
+
+        except HTTPException:
+            raise
+
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid image input at index {i}"
+            )
+
+    # Truyền cả ảnh và offsets vào service
+    res = cal_robot_coord_service.update_templates(imgs, offset_list)
+
     return res
 
 @robot_router.post(path='/calib_2d')

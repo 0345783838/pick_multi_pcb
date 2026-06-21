@@ -22,7 +22,7 @@ namespace PickAndPlace.Controllers.APIs
         public static Properties.Settings _param = Properties.Settings.Default;
 
 
-        public static GetCoordResponse GetRealCoord(string url, Image<Bgr, byte> image, double pcbWidth, double pcbHeight, int timeout = 15000)
+        public static GetCoordResponse GetRealCoord(string url, Image<Bgr, byte> image, int timeout = 15000)
         {
             var options = new RestClientOptions(url)
             {
@@ -33,21 +33,10 @@ namespace PickAndPlace.Controllers.APIs
 
             var request = new RestRequest(_param.EndPointGetRealCoord, Method.Post);
             request.AlwaysMultipartFormData = true;
-            var payload = new
-            {
-                width = pcbWidth,
-                height = pcbHeight
-            };
             // Add File
             byte[] jpegData = image.ToJpegData();
             request.AddFile("image", jpegData, $"image.jpg");
 
-            string paramsJson = JsonConvert.SerializeObject(payload);   
-            request.AddParameter(
-                                "pcb_size",
-                                paramsJson,
-                                ParameterType.GetOrPost
-            );
             var response = client.Execute(request);
 
             if (response.StatusCode == System.Net.HttpStatusCode.OK)
@@ -259,7 +248,11 @@ namespace PickAndPlace.Controllers.APIs
             }
         }
 
-        internal static bool LoadTemplates(string url, List<Image<Bgr, byte>> imageList, int timeout = 2000)
+        internal static bool LoadTemplates(
+     string url,
+     List<Image<Bgr, byte>> imageList,
+     List<List<double>> offsets,
+     int timeout = 2000)
         {
             try
             {
@@ -275,15 +268,36 @@ namespace PickAndPlace.Controllers.APIs
 
                 int index = 0;
 
-                // Add File
+                // Add images
                 foreach (var img in imageList)
                 {
                     byte[] jpegData = img.ToJpegData();
-                    request.AddFile("images", jpegData, $"template_{index}.jpg");
+
+                    request.AddFile(
+                        "images",
+                        jpegData,
+                        $"template_{index}.jpg",
+                        "image/jpeg"
+                    );
+
                     index++;
                 }
 
+                // Add offsets as multipart form field
+                string offsetsJson = JsonConvert.SerializeObject(offsets);
+
+                request.AddParameter(
+                    "offsets",
+                    offsetsJson,
+                    ParameterType.GetOrPost
+                );
+
                 var response = client.Execute(request);
+
+                // In ra lỗi để debug 422
+                logger.Debug($"StatusCode: {response.StatusCode}");
+                logger.Debug($"ResponseContent: {response.Content}");
+
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     try
@@ -296,13 +310,12 @@ namespace PickAndPlace.Controllers.APIs
                         return false;
                     }
                 }
-                else
-                {
-                    return false;
-                }
+
+                return false;
             }
-            catch
+            catch (Exception ex)
             {
+                logger.Debug(ex.Message);
                 return false;
             }
         }

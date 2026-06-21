@@ -701,5 +701,18 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
 
             return okX && okY;
         }
+
+        private void tbRobot_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        {
+            TextBox tb = sender as TextBox;
+            if (tb == null) return;
+
+            string newText = tb.Text.Remove(tb.SelectionStart, tb.SelectionLength)
+                                    .Insert(tb.SelectionStart, e.Text);
+
+            Regex regex = new Regex(@"^\d+(\.\d*)?$");
+
+            e.Handled = !regex.IsMatch(newText);
+        }
     }
 }
