@@ -74,5 +74,8 @@
     <Setting Name="MoveTimeout" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">10000</Value>
     </Setting>
+    <Setting Name="EndPointTestGetRealCoord" Type="System.String" Scope="User">
+      <Value Profile="(Default)">test_cal_robot_coord</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

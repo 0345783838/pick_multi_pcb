@@ -106,9 +106,9 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
 
         private async void btnConnectCamera_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            CameraConnected = true;
-            OnPropertyChanged(nameof(CameraConnected));
-            return;
+            //CameraConnected = true;
+            //OnPropertyChanged(nameof(CameraConnected));
+            //return;
 
 
             if (cbbCamSn.SelectedItem == null)
@@ -243,8 +243,8 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
         }
         private void btnCaptureImage_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            //var bitmap = _cam.TriggerAndGetFrame();
-            System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(@"D:\huynhvc\OTHERS\pick_multi_pcb\Image_20260307110740938.bmp");
+            var bitmap = _cam.TriggerAndGetFrame();
+            //System.Drawing.Bitmap bitmap = new System.Drawing.Bitmap(@"D:\huynhvc\OTHERS\pick_multi_pcb\Image_20260307110740938.bmp");
             _curImage = new Image<Bgr, byte>(bitmap);
             UpdateImage(bitmap);
             ClearPointMarkers();

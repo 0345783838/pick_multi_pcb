@@ -249,10 +249,10 @@ namespace PickAndPlace.Controllers.APIs
         }
 
         internal static bool LoadTemplates(
-     string url,
-     List<Image<Bgr, byte>> imageList,
-     List<List<double>> offsets,
-     int timeout = 2000)
+                string url,
+                List<Image<Bgr, byte>> imageList,
+                List<List<double>> offsets,
+                int timeout = 2000)
         {
             try
             {
@@ -294,10 +294,6 @@ namespace PickAndPlace.Controllers.APIs
 
                 var response = client.Execute(request);
 
-                // In ra lỗi để debug 422
-                logger.Debug($"StatusCode: {response.StatusCode}");
-                logger.Debug($"ResponseContent: {response.Content}");
-
                 if (response.StatusCode == System.Net.HttpStatusCode.OK)
                 {
                     try
@@ -317,6 +313,78 @@ namespace PickAndPlace.Controllers.APIs
             {
                 logger.Debug(ex.Message);
                 return false;
+            }
+        }
+        internal async static Task<GetCoordResponse> TestGetRealCoord(
+            string url,
+            Image<Bgr, byte> image,
+            List<Image<Bgr, byte>> templateList,
+            List<List<double>> offsets,
+            int timeout = 5000)
+        {
+            try
+            {
+                var options = new RestClientOptions(url)
+                {
+                    Timeout = TimeSpan.FromMilliseconds(timeout)
+                };
+
+                var client = new RestClient(options);
+
+                var request = new RestRequest(_param.EndPointTestGetRealCoord, Method.Post);
+                request.AlwaysMultipartFormData = true;
+
+                int index = 0;
+
+                // Add Image
+                byte[] jpegData = image.ToJpegData();
+                request.AddFile("image", jpegData, $"image.jpg");
+
+                // Add templates
+                foreach (var img in templateList)
+                {
+                    byte[] jpegDatatemplate = img.ToJpegData();
+
+                    request.AddFile(
+                        "templates",
+                        jpegDatatemplate,
+                        $"template_{index}.jpg",
+                        "image/jpeg"
+                    );
+
+                    index++;
+                }
+
+                // Add offsets as multipart form field
+                string offsetsJson = JsonConvert.SerializeObject(offsets);
+
+                request.AddParameter(
+                    "offsets",
+                    offsetsJson,
+                    ParameterType.GetOrPost
+                );
+
+                var response = await client.ExecuteAsync(request);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    try
+                    {
+                        return JsonConvert.DeserializeObject<GetCoordResponse>(response.Content);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.Debug(ex.Message);
+                        return null;
+                    }
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                logger.Debug(ex.Message);
+                return null;
             }
         }
     }

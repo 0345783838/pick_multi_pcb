@@ -29,20 +29,10 @@ class PixelPoint(BaseModel):
 class FilePath(BaseModel):
     path: str
 
-
-class PcbSize(BaseModel):
-    width: float
-    height: float
-
-
 @robot_router.post(path='/cal_robot_coord')
-def cal_robot_coord(image: UploadFile = File(...), pcb_size: str = Form(...)):
+def cal_robot_coord(image: UploadFile = File(...)):
     if not image.file:
         raise HTTPException(status_code=400, detail="Invalid input")
-
-    pcb_size_json = PcbSize(**json.loads(pcb_size))
-    pcb_width = pcb_size_json.width
-    pcb_height = pcb_size_json.height
 
     img_str = image.file.read()
     if img_str is None or img_str == b'':
@@ -56,7 +46,7 @@ def cal_robot_coord(image: UploadFile = File(...), pcb_size: str = Form(...)):
     except Exception as ex:
         # Cannot decode image
         raise HTTPException(status_code=400, detail="Invalid input")
-    res = cal_robot_coord_service.cal_robot_coord(img, pcb_width, pcb_height)
+    res = cal_robot_coord_service.cal_robot_coord(img)
     return res
 
 
@@ -145,6 +135,125 @@ async def load_templates(
     res = cal_robot_coord_service.update_templates(imgs, offset_list)
 
     return res
+
+
+@robot_router.post(path='/test_cal_robot_coord')
+async def test_cal_robot_coord(
+    image: UploadFile = File(...),
+    templates: List[UploadFile] = File(...),
+    offsets: str = Form(...)
+):
+    temp_imgs = []
+
+    # Parse offsets từ string JSON: "[[3,5,6],[2,6,8]]"
+    try:
+        offset_list = json.loads(offsets)
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid offsets format. Expected JSON string like [[3,5,6],[2,6,8]]"
+        )
+
+    # Check offsets có đúng dạng list không
+    if not isinstance(offset_list, list):
+        raise HTTPException(
+            status_code=400,
+            detail="Offsets must be a list"
+        )
+
+    # Check số lượng ảnh và offset có khớp không
+    if len(templates) != len(offset_list):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Images count and offsets count not match. images={len(templates)}, offsets={len(offset_list)}"
+        )
+
+    # Check mỗi offset phải có 3 giá trị: [x, y, rz]
+    for i, offset in enumerate(offset_list):
+        if not isinstance(offset, list) or len(offset) != 3:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid offset at index {i}. Expected [x, y, rz]"
+            )
+
+        try:
+            offset_list[i] = [
+                float(offset[0]),
+                float(offset[1]),
+                float(offset[2])
+            ]
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid offset value at index {i}. Offset must be numeric"
+            )
+
+    # Decode image
+    img_bytes = await image.read()
+
+    if img_bytes is None or img_bytes == b'':
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid image"
+        )
+
+    try:
+        np_img = np.frombuffer(img_bytes, np.uint8)
+        img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+
+        if img is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot decode image"
+                )
+
+    except HTTPException:
+        raise
+
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid image input"
+        )
+
+
+
+    # Decode templates
+    for i, image in enumerate(templates):
+        img_bytes = await image.read()
+
+        if img_bytes is None or img_bytes == b'':
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid image at index {i}"
+            )
+
+        try:
+            np_img = np.frombuffer(img_bytes, np.uint8)
+            temp = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+
+            if temp is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Cannot decode image at index {i}"
+                )
+
+            temp_imgs.append(temp)
+
+        except HTTPException:
+            raise
+
+        except Exception:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid image input at index {i}"
+            )
+
+    # Truyền cả ảnh và offsets vào service
+    res = cal_robot_coord_service.cal_robot_coord_test_phase(img, temp_imgs, offset_list)
+
+    return res
+
 
 @robot_router.post(path='/calib_2d')
 def calib_2d(data: PointPairs):

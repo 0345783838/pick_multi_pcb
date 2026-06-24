@@ -68,29 +68,52 @@ namespace PickAndPlace.Models
             }
             return modelNamesList;
         }
-        public static ModelInfo 
-            LoadModelByName(string modelName)
+        public static ModelInfo LoadModelByName(string modelName)
         {
             ModelInfo model = null;
             string path = Properties.Settings.Default.MODELS_PATH + "/" + modelName + "/" + modelName + ".json";
+
             try
             {
                 string str = File.ReadAllText(path);
                 model = JsonConvert.DeserializeObject<ModelInfo>(str);
-                model.BigImage = new Image<Bgr, byte>(model.BigImagePath);
+
+                if (model == null)
+                    return null;
+
+                if (!string.IsNullOrEmpty(model.BigImagePath) && File.Exists(model.BigImagePath))
+                    model.BigImage = new Image<Bgr, byte>(model.BigImagePath);
+
                 if (model.Templates == null || model.Templates.Count == 0)
                 {
-                    // Remove invalid model
                     Directory.Delete(IO.GetFolderPath(path), true);
                     return null;
                 }
+
+                for (int i = 0; i < model.Templates.Count; i++)
+                {
+                    Template template = model.Templates[i];
+
+                    if (!string.IsNullOrEmpty(template.ImagePath) && File.Exists(template.ImagePath))
+                    {
+                        template.Image = new Image<Bgr, byte>(template.ImagePath);
+                    }
+                    else
+                    {
+                        return null;
+                    }
+
+                    template.Id = i;
+                }
             }
-            catch (Exception ex)
+            catch
             {
                 return null;
             }
+
             return model;
         }
+
         public void SaveModel()
         {
             try

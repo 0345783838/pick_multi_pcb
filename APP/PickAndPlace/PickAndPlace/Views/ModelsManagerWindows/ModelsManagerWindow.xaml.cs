@@ -268,7 +268,7 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             // POSE 100.1 200.2 50 0 0 90
             var matches = Regex.Matches(text, @"[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?");
 
-            if (matches.Count < 4)
+            if (matches.Count < 6)
                 return false;
 
             bool okX = double.TryParse(
@@ -293,7 +293,7 @@ namespace PickAndPlace.Views.ModelsManagerWindows
             );
 
             bool okRz = double.TryParse(
-                matches[3].Value,
+                matches[5].Value,
                 NumberStyles.Float,
                 CultureInfo.InvariantCulture,
                 out rz

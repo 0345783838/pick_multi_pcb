@@ -107,6 +107,14 @@ namespace PickAndPlace.Controller.Robot
             string response = await SendCommandAsync(command);
             return response == "PICK_OK";
         }
+        // 5. GỬI LỆNH TEST (Đến tọa độ X, Y và góc RZ)
+        public async Task<bool> TestAsync(double x, double y, double rz)
+        {
+            // Mở rộng giao thức dựa trên cấu trúc phân tách mảng chuỗi [9]
+            string command = $"TEST {x} {y} {rz}";
+            string response = await SendCommandAsync(command);
+            return response == "TEST_OK";
+        }
 
         public void Dispose()
         {

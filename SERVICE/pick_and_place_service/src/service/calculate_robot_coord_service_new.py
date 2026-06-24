@@ -227,7 +227,7 @@ class CalculateRobotCoordService(BaseService):
         length = float(self.direction_length_pixel)
 
         direction_image_x = cx + length * math.cos(theta)
-        direction_image_y = cy + length * math.sin(theta)
+        direction_image_y = cy - length * math.sin(theta)
 
         center_robot_x, center_robot_y = self._transform_point_to_robot([cx, cy])
         direction_robot_x, direction_robot_y = self._transform_point_to_robot(
@@ -386,7 +386,144 @@ class CalculateRobotCoordService(BaseService):
         draw_y = int(np.min(polygon[:, 1]))
 
         draw_x = max(draw_x - 50, 0)
-        draw_y = max(draw_y - 60, 30)
+        draw_y = max(draw_y - 150, 30)
+
+        score = float(result.score)
+
+        cv2.putText(
+            draw_image,
+            f"Score: {score:.4f}",
+            (draw_x, draw_y),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2
+        )
+
+        cv2.putText(
+            draw_image,
+            f"ImgX: {center_x:.3f} ImgY: {center_y:.3f} ImgA: {angle:.3f}",
+            (draw_x, draw_y + 35),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2
+        )
+
+        cv2.putText(
+            draw_image,
+            f"ObjRobotA: {object_robot_angle:.3f}",
+            (draw_x, draw_y + 70),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2
+        )
+
+        cv2.putText(
+            draw_image,
+            f"RobotX: {pick_x:.3f} RobotY: {pick_y:.3f} RZ: {robot_angle:.3f}",
+            (draw_x, draw_y + 105),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2
+        )
+
+        return DataResponse(
+            Result=True,
+            Message="Calculate robot coordinate successfully",
+            Score=score,
+            ResImg=self._convert_2_base64(draw_image),
+            ImageX=center_x,
+            ImageY=center_y,
+            ImageAngle=angle,
+            RobotX=pick_x,
+            RobotY=pick_y,
+            RobotAngle=robot_angle
+        )
+
+    def cal_robot_coord_test_phase(self, image, templates, offsets):
+        if image is None:
+            return DataResponse(Result=False, Message="Image is None")
+
+        if len(templates) == 0:
+            return DataResponse(Result=False, Message="No template loaded")
+
+        if len(offsets) != len(templates):
+            return DataResponse(Result=False, Message="Template and offset count not matching")
+
+        if len(image.shape) == 3:
+            img_gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            draw_image = image.copy()
+        else:
+            img_gray = image.copy()
+            draw_image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGR)
+
+        matches = []
+        temp_idx = -1
+
+        for i, template in enumerate(templates):
+            cur_matches = self.image_matcher.match(img_gray, template)
+
+            if cur_matches is None or len(cur_matches) == 0:
+                continue
+
+            matches = cur_matches
+            temp_idx = i
+            break
+
+        if len(matches) == 0 or temp_idx < 0:
+            return DataResponse(Result=False, Message="Không tìm thấy PCB / template")
+
+        robot_offset_vector = offsets[temp_idx]
+        result = matches[0]
+
+        angle = float(result.angle)
+        center_x = float(result.center_x)
+        center_y = float(result.center_y)
+
+        try:
+            pick_x, pick_y, robot_angle, object_robot_angle = self.compute_robot_pose(
+                [center_x, center_y],
+                angle,
+                robot_offset_vector
+            )
+        except Exception as ex:
+            return DataResponse(
+                Result=False,
+                Message=f"Compute robot pose error: {str(ex)}"
+            )
+
+        # ======================================================
+        # DRAW RESULT
+        # ======================================================
+
+        polygon = np.array(
+            [
+                [result.left_top_x, result.left_top_y],
+                [result.right_top_x, result.right_top_y],
+                [result.right_bottom_x, result.right_bottom_y],
+                [result.left_bottom_x, result.left_bottom_y],
+            ],
+            dtype=np.int32
+        )
+
+        cv2.polylines(draw_image, [polygon], True, (0, 255, 0), 2)
+
+        cv2.circle(
+            draw_image,
+            (int(center_x), int(center_y)),
+            5,
+            (0, 0, 255),
+            -1
+        )
+
+        draw_x = int(np.min(polygon[:, 0]))
+        draw_y = int(np.min(polygon[:, 1]))
+
+        draw_x = max(draw_x - 50, 0)
+        draw_y = max(draw_y - 150, 30)
 
         score = float(result.score)
 

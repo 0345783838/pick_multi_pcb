@@ -180,6 +180,8 @@ namespace PickAndPlace.Views.SettingsWindows
                 _param.SaveMode = 1;
             }
             _param.Save();
+            var info = new InformationWindow("Save Settings successfully!\rLưu Settings thành công!");
+            info.ShowDialog();
             this.Close();
         }
 

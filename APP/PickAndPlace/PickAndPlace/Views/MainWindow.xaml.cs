@@ -282,7 +282,7 @@ namespace PickAndPlace.Views
                             this.Dispatcher.Invoke(new Action(() =>
                             {
                                 UpdateAIStatus(false);
-                                var box = new ErrorWindow("Cannot start AI service! Please contact IT!\rKhông khởi động được AI, Hãy liên hệ bộ phận PI");
+                                var box = new ErrorWindow("Cannot start AI service! Please contact the technical engineer!\rKhông khởi động được AI, Hãy liên hệ kỹ thuật");
                                 box.ShowDialog();
                             }));
                         }
@@ -447,8 +447,8 @@ namespace PickAndPlace.Views
             this.Dispatcher.Invoke(() =>
             {
                 lbScore.Content = score.ToString("0.0000");
-                lbImageXYR.Content = $"{imageX.ToString("0.0")},  {imageY.ToString("0.0")},  {imageAngle.ToString("0.0")}";
-                lbRobotXYW.Content = $"{robotX.ToString("0.0")},  {robotY.ToString("0.0")},  {robotW.ToString("0.0")}";
+                lbImageXYR.Content = $"{imageX.ToString("0.00")},  {imageY.ToString("0.00")},  {imageAngle.ToString("0.00")}";
+                lbRobotXYW.Content = $"{robotX.ToString("0.00")},  {robotY.ToString("0.00")},  {robotW.ToString("0.00")}";
             });
         }
         internal void UpdateInspectionStatus(bool status)
