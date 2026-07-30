@@ -39,7 +39,7 @@ namespace PickAndPlace.Controller
 
         private CameraManager _cameraManager;
         private LincolnCamera _camera;
-        private DobotRobotClient _robot;
+        private NachiRobotClient _robot;
 
         // ─── Constants ───────────────────────────────────────────────────────────
         private const int TriggerPollIntervalMs = 200;
@@ -256,7 +256,7 @@ namespace PickAndPlace.Controller
                 _robot?.Dispose();
                 _robot = null;
 
-                var robot = new DobotRobotClient(
+                var robot = new NachiRobotClient(
                     _param.RobotIp,
                     _param.RobotPort,
                     timeoutMs: _param.WriteTimeout

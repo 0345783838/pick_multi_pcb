@@ -80,7 +80,7 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
         private VisionShape _selectedPointShape;
         private VisionShape _validationPointShape;
 
-        private DobotRobotClient _robot;
+        private NachiRobotClient _robot;
 
         public EyeHand2dCalibWindow()
         {
@@ -337,7 +337,7 @@ namespace PickAndPlace.Views.EyeHand2dCalibWindows
 
                 // Dobot mặc định dùng IP 192.168.5.1, port 8000.
                 // Nếu _param.RobotIp đã config đúng thì dùng setting này.
-                _robot = new DobotRobotClient(
+                _robot = new NachiRobotClient(
                     ipAddress: _param.RobotIp,
                     port: 8000,
                     timeoutMs: _param.ReadPoseTimeout
