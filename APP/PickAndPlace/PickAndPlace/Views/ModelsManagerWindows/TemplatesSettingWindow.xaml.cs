@@ -73,7 +73,7 @@ namespace PickAndPlace.Views.ModelsManagerWindows
 
         private CameraManager _cameraManager;
         private LincolnCamera _cam;
-        private DobotRobotClient _robot;
+        private NachiRobotClient _robot;
 
         /// <summary>
         /// Ảnh master/setup của model.
@@ -1474,7 +1474,7 @@ namespace PickAndPlace.Views.ModelsManagerWindows
                     _robot = null;
                 }
 
-                _robot = new DobotRobotClient(
+                _robot = new NachiRobotClient(
                     ipAddress: _param.RobotIp,
                     port: 8000,
                     timeoutMs: _param.ReadPoseTimeout);

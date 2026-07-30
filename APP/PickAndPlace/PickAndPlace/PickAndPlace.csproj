@@ -159,6 +159,7 @@
     <Compile Include="Controller\Robot\DobotRobotClient.cs" />
     <Compile Include="Controller\Robot\EpsonRobotClient.cs" />
     <Compile Include="Controller\Robot\NachiRobotClient.cs" />
+    <Compile Include="Controller\Robot\NachiRobotClientOld.cs" />
     <Compile Include="Models\Calib2DResponse.cs" />
     <Compile Include="Models\GetCoordResponse.cs" />
     <Compile Include="Models\RobotPose.cs" />
